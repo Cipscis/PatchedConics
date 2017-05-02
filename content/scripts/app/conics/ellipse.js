@@ -1,0 +1,122 @@
+define(
+	[
+		'vector/vector'
+	],
+
+	function (Vector) {
+		// Do all calculations using a system of local coordinates:
+		// treat the x axis as the semimajor axis and the origin as
+		// the centre of the ellipse, then take global coords and
+		// rotation into account when rendering
+
+		var Ellipse = function (x, y, j, n, angle) {
+			// x and y are the coordinates of the ellipse's centre
+			// j and n are the lengths of the semimajor and semiminor axes
+			// angle is the angle of the semimajor axis measured from the horizontal, in radians
+
+			this.coords = new Vector(x, y);
+			this.j = j;
+			this.n = n;
+			this.angle = angle;
+
+			if (this.n > this.j) {
+				// Use a as temp, swap n and j so j is larger
+				a = this.j;
+				this.j = this.n;
+				this.n = a;
+
+				// Increment angle by pi/2 to compensate for swap
+				this.angle += Math.PI/2;
+			}
+
+			// Distance between foci
+			this.a = Math.sqrt(Math.pow(this.j, 2) - Math.pow(this.n, 2));
+		};
+
+		Object.defineProperty(Ellipse.prototype, 'foci', {
+			get: function () {
+				var d = new Vector(Math.cos(this.angle) * this.a, Math.sin(this.angle) * this.a);
+
+				return [
+					this.coords.add(d),
+					this.coords.subtract(d)
+				];
+			}
+		});
+
+		Object.defineProperty(Ellipse.prototype, 'e', {
+			get: function () {
+				return this.a / this.j;
+			}
+		});
+
+		Ellipse.prototype.translateTo = function (v) {
+			if (v && v instanceof Vector) {
+				this.coords = v;
+			}
+		};
+
+		Ellipse.prototype.translate = function (v) {
+			if (v && v instanceof Vector) {
+				this.translateTo(this.coords.add(v));
+			}
+		};
+
+		Ellipse.prototype.translateFocusTo = function (v) {
+			// Treat the first focus as the "main" one
+
+			// Move the main focus to the passed position
+
+			var d;
+
+			if (v && v instanceof Vector) {
+				d = v.subtract(this.foci[0]);
+				this.translate(d);
+			}
+		};
+
+		Ellipse.prototype.getPointAtEccentricAnomaly = function (angle) {
+			var x, y;
+
+			x = Math.cos(angle) * this.j;
+			y = Math.sin(angle) * this.n;
+
+			return new Vector(x, y);
+		};
+
+
+		// DRAWING //
+		Ellipse.prototype.draw = function (ctx, strokeStyle) {
+			ctx.save();
+
+			ctx.strokeStyle = strokeStyle || '#ffffff';
+
+			ctx.translate(this.coords.x, this.coords.y);
+			ctx.rotate(this.angle);
+			ctx.beginPath();
+			ctx.ellipse(0, 0, this.j, this.n, 0, 0, Math.PI*2);
+			ctx.stroke();
+
+			ctx.restore();
+		};
+
+		Ellipse.prototype.drawFoci = function (ctx, fillStyle) {
+			// For debugging, draw the foci of an ellipse
+			ctx.save();
+
+			ctx.fillStyle = fillStyle || '#ffffff';
+
+			ctx.beginPath();
+			ctx.arc(this.foci[0].x, this.foci[0].y, 5, 0, Math.PI*2);
+			ctx.fill();
+
+			ctx.beginPath();
+			ctx.arc(this.foci[1].x, this.foci[1].y, 5, 0, Math.PI*2);
+			ctx.fill();
+
+			ctx.restore();
+		};
+
+		return Ellipse;
+	}
+);

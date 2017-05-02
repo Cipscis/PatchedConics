@@ -1,0 +1,29 @@
+<html>
+<head>
+	<title>Patched Conics</title>
+	<script src="content/scripts/lib/require/require.js" type="text/javascript"></script>
+	<script src="content/scripts/lib/require/config.js" type="text/javascript"></script>
+
+	<link rel="stylesheet" href="content/css/style.css" />
+</head>
+<body>
+	<script type="text/javascript">
+		require(['patchedConics'], function (PatchedConics) {
+			PatchedConics.init();
+		});
+	</script>
+
+	<span id="fps">0</span>
+	<div>
+		<span id="x"></span>, <span id="y"></span>
+	</div>
+	<div>
+		<span id="v"></span>
+	</div>
+
+	<div class="canvas-wrapper">
+		<canvas id="orbits" width="800" height="600"></canvas>
+		<canvas id="celestial-bodies" width="800" height="600"></canvas>
+	</div>
+</body>
+</html>

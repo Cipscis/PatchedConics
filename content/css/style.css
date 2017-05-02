@@ -1,0 +1,32 @@
+html, body {
+  background: #333;
+  color: #fff;
+}
+
+.canvas-wrapper {
+  position: relative;
+  height: 600px;
+  width: 800px;
+  background: #000;
+}
+
+.canvas-wrapper canvas {
+  position: absolute;
+}
+
+.canvas-cache {
+  position: absolute;
+  width: 0;
+  height: 0;
+  visibility: hidden;
+}
+
+.debug {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 200px;
+  background: white;
+  padding: 10px;
+  border: 1px solid black;
+}
