@@ -26,7 +26,7 @@ define(
 		var config = {
 			// Gravitational constant
 			// G = 6.67408 * Math.pow(10, -11); // m^3 kg^-1 s^-2
-			G: 10000,
+			G: 100000,
 
 			// Number of iterations for calculating mean anomaly
 			iterM: 10
@@ -50,7 +50,7 @@ define(
 			if (this.orbitParent) {
 				var r = Math.sqrt(Math.pow(this.coords.x, 2) + Math.pow(this.coords.y, 2));
 
-				this.orbit = new Ellipse(0, 0, r*1.1, r, Math.PI/2);
+				this.orbit = new Ellipse(0, 0, r*(Math.random()*0.2+0.9), r, Math.random()*Math.PI*2);
 				this.orbit.translateFocusTo(this.orbitParent.getGlobalPosition());
 			}
 		};
@@ -127,13 +127,7 @@ define(
 				velocity = this.v;
 
 				// Speed of orbiting body relative to parent
-
-				// Measured velocity
 				speed = velocity.mod();
-
-				// vis-viva equation
-				// speed = Math.sqrt(u * (2 / r - 1 / this.orbit.j));
-				// velocity = velocity.normalise().scale(speed);
 
 				// Semimajor axis of orbital ellipse, based on
 				// solving the vis-viva equation for a
@@ -184,6 +178,8 @@ define(
 				ctx.celestialBodies.stroke();
 
 				ctx.celestialBodies.restore();
+
+				return newOrbit;
 			}
 		};
 
@@ -211,12 +207,17 @@ define(
 				var E, B,
 					v;
 
+				// Eccentric anomaly depends on time only
 				E = this.eccentricAnomaly();
+
+				// New coords depends on eccentric anomaly
 				B = this.orbitalPosition(E);
+
+				// New velocity depends on eccentric anomaly and position
+				this.coords = B;
 				v = this.orbitalVelocity(E);
 
 				this.v = v;
-				this.coords = B;
 
 				this.recalculateOrbit();
 			}
@@ -245,7 +246,7 @@ define(
 
 				// Mean anomaly
 				M = n * (this.t);
-				if (this.orbit.anticlockwise) {
+				if (this.orbitAnticlockwise) {
 					M = -M;
 				}
 
@@ -280,23 +281,17 @@ define(
 				var u,
 					r,
 					speed, velocity,
-					tangent, tangentSlope;
+					tangent;
 
 				// Calculate speed using vis-viva equation
 				u = config.G * this.orbitParent.mass;
 				r = this.coords.mod();
 				speed = Math.sqrt(u * (2 / r - 1 / this.orbit.j));
 
-				// Calculate tangent to ellipse at current point
-				if (Math.sin(E) === 0) {
-					tangent = new Vector(0, 1);
-				} else {
-					tangentSlope = -(this.orbit.n * Math.cos(E))/(this.orbit.j * Math.sin(E));
-					tangent = new Vector(1, tangentSlope);
-				}
+				tangent = this.orbit.getTangentAtEccentricAnomaly(E);
 
 				// Calculate velocity by combining tangent vector with speed
-				velocity = tangent.normalise().scale(speed);
+				velocity = tangent.scale(speed);
 
 				// Correct the velocity's direction if necessary
 				if ((E % (Math.PI*2)) < Math.PI) {

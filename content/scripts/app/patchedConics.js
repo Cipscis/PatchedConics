@@ -54,7 +54,8 @@ define(
 					mass: 10,
 
 					r: 100, g: 200, b: 100,
-					orbitParent: sun
+					orbitParent: sun,
+					orbitAnticlockwise: Math.random() > 0.5
 				});
 
 				cb.push(planet);
@@ -66,10 +67,11 @@ define(
 					size: 3,
 
 					r: 255, g: 255, b: 255,
-					orbitParent: planet
+					orbitParent: planet,
+					orbitAnticlockwise: Math.random() > 0.5
 				});
 
-				// cb.push(moon);
+				cb.push(moon);
 
 				var planet2 = new CelestialBody({
 					name: 'Planet 2',
@@ -78,10 +80,11 @@ define(
 					size: 12,
 
 					r: 200, g: 100, b: 100,
-					orbitParent: sun
+					orbitParent: sun,
+					orbitAnticlockwise: Math.random() > 0.5
 				});
 
-				// cb.push(planet2);
+				cb.push(planet2);
 			},
 
 			_doStep: function (dt) {

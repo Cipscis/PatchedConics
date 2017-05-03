@@ -73,16 +73,39 @@ define(
 			}
 		};
 
-		Ellipse.prototype.getPointAtEccentricAnomaly = function (angle) {
+		Ellipse.prototype.getPointAtEccentricAnomaly = function (E) {
 			// Return a point along an ellipse given an eccentric anomaly
 			// The point is relative to the centre of the ellipse
 
 			var x, y;
 
-			x = Math.cos(angle) * this.j;
-			y = Math.sin(angle) * this.n;
+			x = Math.cos(E) * this.j;
+			y = Math.sin(E) * this.n;
 
 			return new Vector(x, y).rotate(this.angle);
+		};
+
+		Ellipse.prototype.getTangentAtEccentricAnomaly = function (E) {
+			// Return a unit vector that is tangent to the ellipse at a
+			// given eccentric anomaly
+
+			var tangent,
+				tangentSlope;
+
+			if (Math.sin(E) === 0) {
+				tangent = new Vector(0, 1);
+			} else {
+				tangentSlope = -(this.n * Math.cos(E))/(this.j * Math.sin(E));
+				tangent = new Vector(1, tangentSlope);
+			}
+
+			// Correct the tangent's direction if necessary
+			if ((E % (Math.PI*2)) < Math.PI) {
+				// E should already be above 0
+				tangent = tangent.scale(-1);
+			}
+
+			return tangent.normalise().rotate(this.angle);
 		};
 
 		Ellipse.prototype.eccentricAnomaly = function (f) {
