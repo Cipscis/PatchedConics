@@ -65,6 +65,7 @@ define(
 					y: 0,
 					size: 3,
 
+					r: 255, g: 255, b: 255,
 					orbitParent: planet
 				});
 

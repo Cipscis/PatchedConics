@@ -50,8 +50,8 @@ define(
 			if (this.orbitParent) {
 				var r = Math.sqrt(Math.pow(this.coords.x, 2) + Math.pow(this.coords.y, 2));
 
-				this.orbit = new Ellipse(0, 0, r*1.4, r, 0);
-				this.orbit.translateFocusTo(this.orbitParent.coords);
+				this.orbit = new Ellipse(0, 0, r*1.1, r, Math.PI/2);
+				this.orbit.translateFocusTo(this.orbitParent.getGlobalPosition());
 			}
 		};
 
@@ -143,15 +143,12 @@ define(
 				P = 2*Math.PI*Math.sqrt(Math.pow(a, 3)/u);
 
 				// Orbital eccentricity vector
-				ev = this.coords.scale(Math.pow(speed, 2)/u - 1/r).subtract(velocity.scale(this.coords.dot(this.v)/u));
+				// TODO: Something is going wrong here, particularly
+				// prominent when the original orbit's angle gets closer to pi/2
+				ev = this.coords.scale(Math.pow(speed, 2)/u - 1/r).subtract(velocity.scale(this.coords.dot(velocity)/u));
 
 				// Eccentricity
 				e = ev.mod();
-
-				// When recalculating an orbit around the same body,
-				// the semimajor axis should not change. If these are
-				// different, something is wrong
-				// console.log(((a - this.orbit.j)/this.orbit.j*100).toFixed(2) + '%'); // Currently around 1.3% off at worst
 
 				// Semiminor axis, calculated from semimajor axis
 				// and the ellipse's eccentricity
@@ -161,7 +158,7 @@ define(
 				w = ev.getRotation();
 
 				newOrbit = new Ellipse(0, 0, a, b, w);
-				newOrbit.translateFocusTo(this.orbitParent.coords);
+				newOrbit.translateFocusTo(this.orbitParent.getGlobalPosition());
 
 				// Draw for debugging
 				newOrbit.draw(ctx.orbits, 'rgba(255, 0, 0, 0.6)');
@@ -181,6 +178,7 @@ define(
 
 				ctx.celestialBodies.translate(newOrbit.coords.x, newOrbit.coords.y);
 
+				ctx.celestialBodies.beginPath();
 				ctx.celestialBodies.strokeStyle = '#ffffff';
 				ctx.celestialBodies.arc(newPoint.x, newPoint.y, 15, 0, Math.PI*2);
 				ctx.celestialBodies.stroke();
@@ -330,6 +328,7 @@ define(
 
 		CelestialBody.prototype.drawOrbit = function (ctx) {
 			if (this.orbit) {
+				this.orbit.translateFocusTo(this.orbitParent.getGlobalPosition());
 				this.orbit.draw(ctx, 'rgba(' + this.r + ', ' + this.g + ', ' + this.b + ', 0.3)');
 			}
 		};
