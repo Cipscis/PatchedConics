@@ -31,6 +31,10 @@ define([], function () {
 		return new Vector(x*this.x, y*this.y);
 	};
 
+	Vector.prototype.normalise = function () {
+		return this.scale(1/this.mod());
+	};
+
 	Vector.prototype.rotate = function (a) {
 		var x, y;
 
@@ -38,6 +42,10 @@ define([], function () {
 		y = this.x * Math.sin(a) + this.y * Math.cos(a);
 
 		return new Vector(x, y);
+	};
+
+	Vector.prototype.getRotation = function () {
+		return Math.atan2(this.y, this.x);
 	};
 
 	Vector.prototype.dot = function (v2) {

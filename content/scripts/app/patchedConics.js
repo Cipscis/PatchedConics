@@ -8,6 +8,9 @@ define(
 	function (start, CelestialBody) {
 		var ctx = {};
 
+		// For debugging purposes
+		window.ctx = ctx;
+
 		var cb = [];
 
 		var benchmarking = 0.99;
@@ -81,6 +84,7 @@ define(
 			},
 
 			_doStep: function (dt) {
+				Game._clear(); // Moved here from _render for debugging purposes involving drawing in the _update step
 				Game._update(dt);
 				Game._render();
 
@@ -100,7 +104,7 @@ define(
 			},
 
 			_render: function () {
-				Game._clear();
+				// Game._clear();
 				Game._draw();
 			},
 

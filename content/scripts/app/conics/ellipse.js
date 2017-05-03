@@ -44,11 +44,9 @@ define(
 			}
 		});
 
-		Object.defineProperty(Ellipse.prototype, 'e', {
-			get: function () {
-				return this.a / this.j;
-			}
-		});
+		Ellipse.prototype.eccentricity = function () {
+			return this.a / this.j;
+		};
 
 		Ellipse.prototype.translateTo = function (v) {
 			if (v && v instanceof Vector) {
@@ -76,12 +74,38 @@ define(
 		};
 
 		Ellipse.prototype.getPointAtEccentricAnomaly = function (angle) {
+			// Return a point along an ellipse given an eccentric anomaly
+			// The point is relative to the centre of the ellipse
+
 			var x, y;
 
 			x = Math.cos(angle) * this.j;
 			y = Math.sin(angle) * this.n;
 
-			return new Vector(x, y);
+			return new Vector(x, y).rotate(this.angle);
+		};
+
+		Ellipse.prototype.eccentricAnomaly = function (f) {
+			// Calculate the eccentric anomaly from the given true anomaly f
+
+			var e, E;
+
+			// Ensure f is between 0 and 2*pi
+			f = f % (Math.PI*2);
+			if (f < 0) {
+				f += Math.PI*2;
+			}
+
+			// Eccentricity
+			e = this.eccentricity();
+
+			// Eccentric anomaly
+			E = Math.acos((e + Math.cos(f))/(1 + e * Math.cos(f)));
+			if (f > Math.PI) {
+				E = Math.PI*2 - E;
+			}
+
+			return E;
 		};
 
 
