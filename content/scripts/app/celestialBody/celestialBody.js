@@ -210,9 +210,15 @@ define(
 				// recalculating an orbit when changing orbits
 				this.t += dt;
 
+				var E, B,
+					v;
+
 				E = this.eccentricAnomaly();
-				this.coords = this.orbitalPosition(E);
-				this.v = this.orbitalVelocity(E);
+				B = this.orbitalPosition(E);
+				v = this.orbitalVelocity(E);
+
+				this.v = v;
+				this.coords = B;
 
 				this.recalculateOrbit();
 			}
