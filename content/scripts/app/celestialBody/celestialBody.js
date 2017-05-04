@@ -113,6 +113,9 @@ define(
 					ev, e,
 					w,
 					h, orbitAnticlockwise,
+					f, E,
+					n, M,
+					t,
 
 					newOrbit;
 
@@ -177,20 +180,36 @@ define(
 				// Debug: Check calculated position of orbiting body on new ellipse
 
 				// True anomaly
-				var f = coords.getRotation() - ev.getRotation();
+				f = coords.getRotation() - ev.getRotation();
 
 				// Eccentric anomaly
-				var E = newOrbit.eccentricAnomaly(f);
+				E = newOrbit.eccentricAnomaly(f);
 
+				// Calculate time since epoch
+
+				// Average rate of sweep
+				n = Math.PI*2 / P;
+
+				// Mean anomaly
+				// Kepler's equation
+				M = E - e * Math.sin(E);
+				if (orbitAnticlockwise) {
+					M = -M;
+				}
+
+				t = M / n;
+
+
+				// Debug: Draw orbit and new calculated position
 				var newPoint = newOrbit.getPointAtEccentricAnomaly(E);
-
 				ctx.celestialBodies.save();
 
 				ctx.celestialBodies.translate(newOrbit.coords.x, newOrbit.coords.y);
+				ctx.celestialBodies.translate(newPoint.x, newPoint.y);
 
 				ctx.celestialBodies.beginPath();
 				ctx.celestialBodies.strokeStyle = '#ffffff';
-				ctx.celestialBodies.arc(newPoint.x, newPoint.y, 15, 0, Math.PI*2);
+				ctx.celestialBodies.arc(0, 0, 15, 0, Math.PI*2);
 				ctx.celestialBodies.stroke();
 
 				ctx.celestialBodies.restore();
@@ -199,20 +218,6 @@ define(
 					this.orbit = newOrbit;
 					this.orbitParent = parent;
 					this.orbitAnticlockwise = orbitAnticlockwise;
-
-					// Also need to update t
-					// M = n*t --> t = M/n
-					// n = 2pi/P
-					// M = E - e*sin(E)
-					// E and e are known
-
-					var n = Math.PI*2/P;
-					var M = E - e * Math.sin(E);
-					var t = M / n;
-					if (orbitAnticlockwise) {
-						t = -t;
-					}
-
 					this.t = t;
 				}
 
