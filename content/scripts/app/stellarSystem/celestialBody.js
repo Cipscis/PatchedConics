@@ -1,11 +1,11 @@
 define(
 	[
-		'conics/ellipse',
+		'conics/conic',
 
 		'vector/vector'
 	],
 
-	function (Ellipse, Vector) {
+	function (Conic, Vector) {
 		var defaults = {
 			name: 'New celestial body',
 
@@ -26,7 +26,7 @@ define(
 		var config = {
 			// Gravitational constant
 			// G = 6.67408 * Math.pow(10, -11); // m^3 kg^-1 s^-2
-			G: 1000,
+			G: 100000,
 
 			// Number of iterations for calculating mean anomaly
 			iterM: 10
@@ -49,16 +49,15 @@ define(
 			this.v = new Vector(0, 0);
 
 			if (this.orbitParent) {
-				var r = Math.sqrt(Math.pow(this.coords.x, 2) + Math.pow(this.coords.y, 2));
-
-				this.orbit = new Ellipse(0, 0, r*(Math.random()*0.2+0.9), r, Math.random()*Math.PI*2);
-				this.orbit.translateFocusTo(this.orbitParent.getGlobalPosition());
+				this.setInitialOrbit();
 			}
 		};
 
-		// COORDINATE SYSTEMS //
-		// Position and velocity are stored relative to the current orbital parent
+		///////////////////////////
+		// COORDINATE CONVERSION //
+		///////////////////////////
 
+		// Position and velocity are stored relative to the current orbital parent
 		CelestialBody.prototype.getGlobalPosition = function () {
 			var coords = this.coords,
 				body = this;
@@ -98,9 +97,23 @@ define(
 			return this.getGlobalVelocity().subtract(parent.getGlobalVelocity());
 		};
 
-		// DETERMINATION //
-		CelestialBody.prototype.recalculateOrbit = function (parent, setNewOrbit) {
-			// Currently assumes new orbit will be an Ellipse
+		///////////////////////////
+		// ORBITAL DETERMINATION //
+		///////////////////////////
+		CelestialBody.prototype.setInitialOrbit = function (parent, progression) {
+			this.orbitParent = parent || this.orbitParent;
+
+			var r, P;
+
+			// Distance from orbiting parent
+			r = Math.sqrt(Math.pow(this.coords.x, 2) + Math.pow(this.coords.y, 2));
+
+			this.orbit = new Conic(0, 0, r*(Math.random()*0.02+0.995), r, Math.random()*Math.PI*2);
+			this.orbit.translateFocusTo(this.orbitParent.getGlobalPosition());
+		};
+
+		CelestialBody.prototype.recalculateOrbit = function (parent) {
+			// TODO: Support hyperbolic orbits
 
 			parent = parent || this.orbitParent;
 
@@ -109,22 +122,23 @@ define(
 					coords, r,
 					velocity, speed,
 					a, b,
-					P,
 					ev, e,
 					w,
 					h, orbitAnticlockwise,
 					f, E,
-					n, M,
+					P, n,
+					M,
 					t,
 
 					newOrbit;
 
-				// Orbital state vectors are known:
-					// this.coords
-					// this.v
-
 				// Standard gravitational parameter
 				u = parent.mass * config.G;
+
+
+				// Orbital state vectors relative to parent are known:
+					// Position
+					// Velocity
 
 				// Position vector of orbiting body relative to parent
 				coords = this.getLocalPosition(parent);
@@ -138,29 +152,32 @@ define(
 				// Speed of orbiting body relative to parent
 				speed = velocity.mod();
 
-				// Semimajor axis of orbital ellipse, based on
+
+				// Semimajor axis of orbit, based on
 				// solving the vis-viva equation for a
 				a = r*u / (2*u - r*Math.pow(speed, 2));
 
-				// Orbital period (Kepler's third law)
-				P = 2*Math.PI*Math.sqrt(Math.pow(a, 3)/u);
-
 				// Orbital eccentricity vector
-				// TODO: Something is going wrong here, particularly
-				// prominent when the original orbit's angle gets closer to pi/2
 				ev = coords.scale(Math.pow(speed, 2)/u - 1/r).subtract(velocity.scale(coords.dot(velocity)/u));
 
 				// Eccentricity
 				e = ev.mod();
 
 				// Semiminor axis, calculated from semimajor axis
-				// and the ellipse's eccentricity
-				b = a * Math.sqrt(1 - Math.pow(e, 2));
+				// and the orbit's eccentricity
+				if (e < 1) {
+					// Elliptical orbit
+					b = a * Math.sqrt(1 - Math.pow(e, 2));
+				} else {
+					// Hyperbolic orbit
+					b = -a * Math.sqrt(Math.pow(e, 2) - 1);
+				}
 
 				// Argument of periapsis
 				w = ev.getRotation();
 
-				newOrbit = new Ellipse(0, 0, a, b, w);
+
+				newOrbit = new Conic(0, 0, a, b, w);
 				newOrbit.translateFocusTo(parent.getGlobalPosition());
 
 				// Angular momentum
@@ -170,25 +187,15 @@ define(
 				h = coords.x * velocity.y - coords.y * velocity.x;
 
 				// The sign of the angular momentum component determines
-				// the direction of the obrit
+				// the direction of the orbit
 				orbitAnticlockwise = h < 0;
 
-				// Draw for debugging
-				newOrbit.draw(ctx.orbits, 'rgba(255, 0, 0, 0.6)');
-
-
-				// Debug: Check calculated position of orbiting body on new ellipse
 
 				// True anomaly
 				f = coords.getRotation() - ev.getRotation();
 
 				// Eccentric anomaly
 				E = newOrbit.eccentricAnomaly(f);
-
-				// Calculate time since epoch
-
-				// Average rate of sweep
-				n = Math.PI*2 / P;
 
 				// Mean anomaly
 				// Kepler's equation
@@ -197,77 +204,56 @@ define(
 					M = -M;
 				}
 
-				t = M / n;
+				// Calculate time since periapsis
+				if (e < 1) {
+					// Elliptical orbit
 
+					// Orbital period (Kepler's third law)
+					P = 2*Math.PI*Math.sqrt(Math.pow(a, 3)/u);
 
-				// Debug: Draw orbit and new calculated position
-				var newPoint = newOrbit.getPointAtEccentricAnomaly(E);
-				ctx.celestialBodies.save();
+					// Average rate of sweep
+					n = Math.PI*2 / P;
 
-				ctx.celestialBodies.translate(newOrbit.coords.x, newOrbit.coords.y);
-				ctx.celestialBodies.translate(newPoint.x, newPoint.y);
-
-				ctx.celestialBodies.beginPath();
-				ctx.celestialBodies.strokeStyle = '#ffffff';
-				ctx.celestialBodies.arc(0, 0, 15, 0, Math.PI*2);
-				ctx.celestialBodies.stroke();
-
-				ctx.celestialBodies.restore();
-
-				if (setNewOrbit) {
-					this.orbit = newOrbit;
-					this.orbitParent = parent;
-					this.orbitAnticlockwise = orbitAnticlockwise;
-					this.t = t;
+					// Time since periapsis
+					t = M / n;
+				} else {
+					// Hyperbolic orbit
+					t = M / Math.sqrt(u / -Math.pow(a, 3));
 				}
 
-				// TODO: Need to be able to return the direction of the orbit and position along it as well
-				return newOrbit;
+				// Set new orbit
+				this.coords = this.getLocalPosition(parent);
+
+				this.orbitParent = parent;
+				this.orbit = newOrbit;
+				this.orbitAnticlockwise = orbitAnticlockwise;
+				this.t = t;
 			}
 		};
 
-		// PHYSICS //
-		CelestialBody.prototype.update = function (dt) {
-			// Currently assumes this.orbit is an Ellipse
+		CelestialBody.prototype.sphereOfInfluenceRadius = function () {
+			// TODO:
+			// This calculation is a fine approximation for very circular
+			// orbits, but for more elliptical ones it would be good to
+			// implement the more accurate version. Though not sure how
+			// best to check the collision on that?
 
-			// Calculates the body's location along its orbit
-			// based on its previous location and the time that
-			// has passed
+			if (!this.mass) {
+				return 0;
+			}
+
+			if (this.orbit.j < 0) {
+				// Negative semimajor axis indicates a hyperbolic orbit
+				// Spheres of influence are only calculated for massive bodies,
+				// and massive bodies should never be on escape trajectories
+				console.warn('Massive body ' + this.name + ' on a hyperbolic orbit');
+				console.log(this.orbit);
+				console.trace();
+				return 0;
+			}
 
 			if (this.orbit) {
-				// TODO: These should be calculated when a new orbit is set
-				if (typeof this.t === 'undefined') {
-					// t is time since periapsis (closest approach to focus)
-					this.t = 0;
-				}
-
-				// Time is how the position is calculated
-				// Past position is discarded each time, and
-				// instantaneous velocity is only recorded for
-				// recalculating an orbit when changing orbits
-				this.t += dt;
-
-				var E, B,
-					v;
-
-				// Eccentric anomaly depends on time only
-				E = this.eccentricAnomaly();
-
-				// New coords depends on eccentric anomaly
-				B = this.orbitalPosition(E);
-
-				// New velocity depends on eccentric anomaly and position
-				this.coords = B;
-				v = this.orbitalVelocity(E);
-
-				this.v = v;
-
-				// TODO: check if it's changed sphere of influence
-				// If it has, find the intersection point and time of crossover,
-				// then calculate the new orbit for the new orbital parent, and
-				// update the object's orbit
-				// Debug: Show calculated orbit around sun
-				this.recalculateOrbit(sun);
+				return this.orbit.j * Math.pow(this.mass / this.orbitParent.mass, 2/5);
 			}
 		};
 
@@ -276,24 +262,36 @@ define(
 
 			if (this.orbit) {
 				var e,
+					u,
 					P, n,
 					M, E,
-					B,
-					v;
+					i;
 
 				// Eccentricity of orbit
 				e = this.orbit.eccentricity();
 
-				// Orbital period
-				// Kepler's 3rd law, adjusted for Newtonian mechanics
-				// P^2/a^3 = 4pi^2/G(M)
-				P = Math.sqrt(4 * Math.pow(Math.PI, 2) / (config.G * (this.orbitParent.mass)) * Math.pow(this.orbit.j, 3));
+				// Standard gravitational parameter
+				u = config.G * this.orbitParent.mass;
 
-				// mean motion
-				n = 2*Math.PI / P;
+				// Calculate mean anomaly
+				if (e < 1) {
+					// Elliptical orbit
 
-				// Mean anomaly
-				M = n * (this.t);
+					// Orbital period (Kepler's third law)
+					P = Math.sqrt(4 * Math.pow(Math.PI, 2) / u * Math.pow(this.orbit.j, 3));
+
+					// Average rate of sweep
+					n = Math.PI*2 / P;
+
+					// Mean anomaly
+					M = n * (this.t);
+				} else {
+					// Hyperbolic orbit
+
+					// Mean anomaly
+					M = Math.sqrt(u / -Math.pow(this.orbit.j, 3)) * t;
+				}
+
 				if (this.orbitAnticlockwise) {
 					M = -M;
 				}
@@ -301,7 +299,7 @@ define(
 				// Eccentric anomaly
 				// Calculated numerically from M
 				E = M;
-				for (var i = 0; i < config.iterM; i++) {
+				for (i = 0; i < config.iterM; i++) {
 					E = M + e * Math.sin(E);
 				}
 
@@ -314,6 +312,7 @@ define(
 				// Point of orbital body, relative to centre of ellipse
 				var B = this.orbit.getPointAtEccentricAnomaly(E);
 
+				// TODO: Needs to support hyperbolic orbits
 				// Translate to be relative to orbital parent (at the main focus of the ellipse) instead of ellipse's centre
 				B = B.add(this.orbit.coords).subtract(this.orbit.foci[0]);
 
@@ -348,7 +347,62 @@ define(
 			}
 		};
 
+		//////////////////
+		// PHYSICS STEP //
+		//////////////////
+		CelestialBody.prototype.update = function (dt) {
+			// TODO: Support hyperbolic orbits
+
+			// Calculates the body's location along its orbit
+			// based on its previous location and the time that
+			// has passed
+
+			if (this.orbit) {
+				// TODO: These should be calculated when a new orbit is set
+				if (typeof this.t === 'undefined') {
+					// t is time since periapsis (closest approach to focus)
+					this.t = 0;
+				}
+
+				// Time is how the position is calculated
+				// Past position is discarded each time, and
+				// instantaneous velocity is only recorded for
+				// recalculating an orbit when changing orbits
+				this.t += dt;
+
+				var E, B,
+					v;
+
+				// Eccentric anomaly depends on time only
+				E = this.eccentricAnomaly();
+
+				// New coords depends on eccentric anomaly
+				B = this.orbitalPosition(E);
+
+				// New velocity depends on eccentric anomaly and position
+				this.coords = B;
+				v = this.orbitalVelocity(E);
+
+				this.v = v;
+
+				// Debug: Draw sphere of influence
+				var r = this.sphereOfInfluenceRadius();
+				ctx.celestialBodies.save();
+
+				var coords = this.getGlobalPosition();
+				ctx.celestialBodies.translate(coords.x, coords.y);
+				ctx.celestialBodies.beginPath();
+				ctx.celestialBodies.strokeStyle = 'rgba(' + this.r + ', ' + this.g + ', ' + this.b + ', 1)';
+				ctx.celestialBodies.arc(0, 0, r, 0, Math.PI*2);
+				ctx.celestialBodies.stroke();
+
+				ctx.celestialBodies.restore();
+			}
+		};
+
+		///////////////
 		// RENDERING //
+		///////////////
 		CelestialBody.prototype.draw = function (ctx) {
 			var coords = this.getGlobalPosition();
 

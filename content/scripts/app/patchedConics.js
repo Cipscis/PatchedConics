@@ -2,16 +2,17 @@ define(
 	[
 		'util/start',
 
-		'celestialBody/celestialBody'
+		'stellarSystem/stellarSystem',
+		'stellarSystem/celestialBody'
 	],
 
-	function (start, CelestialBody) {
+	function (start, StellarSystem, CelestialBody) {
 		var ctx = {};
 
 		// For debugging purposes
 		window.ctx = ctx;
 
-		var cb = [];
+		var system;
 
 		var benchmarking = 0.99;
 
@@ -34,62 +35,57 @@ define(
 			},
 
 			_initSystem: function () {
+				system = new StellarSystem();
+
 				var sun = new CelestialBody({
 					name: 'Sun',
 					x: 400,
 					y: 300,
-					size: 50,
-					mass: 100,
+					size: 15,
+					mass: 600,
 
 					r: 200, g: 200, b: 100
 				});
-
-				cb.push(sun);
 
 				var planet = new CelestialBody({
 					name: 'Planet',
 					x: -150,
 					y: 0,
-					size: 10,
+					size: 3,
 					mass: 10,
 
 					r: 100, g: 200, b: 100,
-					orbitParent: sun,
 					orbitAnticlockwise: Math.random() > 0.5
 				});
 
-				cb.push(planet);
+				system.addCelestialBody(planet);
 
-				var moon = new CelestialBody({
-					name: 'Moon',
+				var spaceship = new CelestialBody({
+					name: 'Spaceship',
 					x: -30,
 					y: 0,
-					size: 3,
+					size: 2,
+					mass: 0,
 
 					r: 255, g: 255, b: 255,
 					orbitParent: planet,
 					orbitAnticlockwise: Math.random() > 0.5
 				});
 
-				cb.push(moon);
-				window.sun = sun;
-
-				document.getElementById('celestial-bodies').addEventListener('click', function () {
-					moon.recalculateOrbit(sun, true);
-				});
+				system.addCelestialBody(spaceship);
 
 				var planet2 = new CelestialBody({
 					name: 'Planet 2',
 					x: -200,
 					y: 200,
-					size: 12,
+					size: 4,
+					mass: 10,
 
 					r: 200, g: 100, b: 100,
-					orbitParent: sun,
 					orbitAnticlockwise: Math.random() > 0.5
 				});
 
-				// cb.push(planet2);
+				system.addCelestialBody(planet2);
 			},
 
 			_doStep: function (dt) {
@@ -105,11 +101,7 @@ define(
 			},
 
 			_update: function (dt) {
-				var i;
-
-				for (i = 0; i < cb.length; i++) {
-					cb[i].update(dt);
-				}
+				system.update(dt);
 			},
 
 			_render: function () {
@@ -128,10 +120,7 @@ define(
 			},
 
 			_draw: function () {
-				for (i = 0; i < cb.length; i++) {
-					cb[i].draw(ctx.celestialBodies);
-					cb[i].drawOrbit(ctx.orbits);
-				}
+				system.draw(ctx.celestialBodies, ctx.orbits);
 			}
 		};
 
