@@ -100,7 +100,7 @@ define(
 			}
 
 			// Correct the tangent's direction if necessary
-			if ((E % (Math.PI*2)) < Math.PI) {
+			if ((Math.abs(E) % (Math.PI*2)) < Math.PI) {
 				// E should already be above 0
 				tangent = tangent.scale(-1);
 			}

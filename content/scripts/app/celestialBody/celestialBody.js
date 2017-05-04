@@ -26,7 +26,7 @@ define(
 		var config = {
 			// Gravitational constant
 			// G = 6.67408 * Math.pow(10, -11); // m^3 kg^-1 s^-2
-			G: 100000,
+			G: 1000,
 
 			// Number of iterations for calculating mean anomaly
 			iterM: 10
@@ -72,11 +72,11 @@ define(
 
 		CelestialBody.prototype.getGlobalVelocity = function () {
 			// Untested
-			var v = this.v,
+			var v = this.v || new Vector(0, 0),
 				body = this;
 
 			while (body.orbit) {
-				v = v.add(body.orbitParent.v);
+				v = v.add(body.orbitParent.v || new Vector(0, 0));
 				body = body.orbitParent;
 			}
 
@@ -94,22 +94,32 @@ define(
 			// Untested
 			parent = parent || this.orbitParent;
 
-			return this.getGlobalVelocity().subtract(parent.getGlobalVelocity());
+			var v = this.getGlobalVelocity(),
+				vParent = parent.getGlobalVelocity();
+
+			if (v && vParent) {
+				return this.getGlobalVelocity().subtract(parent.getGlobalVelocity());
+			} else {
+				// Either this or its parent doesn't have a defined global velocity
+				return new Vector(0, 0);
+			}
 		};
 
 		// DETERMINATION //
-		CelestialBody.prototype.recalculateOrbit = function (parent) {
+		CelestialBody.prototype.recalculateOrbit = function (parent, setNewOrbit) {
 			// Currently assumes new orbit will be an Ellipse
 
 			parent = parent || this.orbitParent;
 
 			if (parent) {
 				var u,
-					r, speed,
+					coords, r,
+					velocity, speed,
 					a, b,
 					P,
 					ev, e,
 					w,
+					h, orbitAnticlockwise,
 
 					newOrbit;
 
@@ -120,11 +130,14 @@ define(
 				// Standard gravitational parameter
 				u = parent.mass * config.G;
 
+				// Position vector of orbiting body relative to parent
+				coords = this.getLocalPosition(parent);
+
 				// Distance between orbiting bodies
-				r = this.coords.mod();
+				r = coords.mod();
 
 				// Velocity of orbiting body relative to parent
-				velocity = this.v;
+				velocity = this.getLocalVelocity(parent);
 
 				// Speed of orbiting body relative to parent
 				speed = velocity.mod();
@@ -139,7 +152,7 @@ define(
 				// Orbital eccentricity vector
 				// TODO: Something is going wrong here, particularly
 				// prominent when the original orbit's angle gets closer to pi/2
-				ev = this.coords.scale(Math.pow(speed, 2)/u - 1/r).subtract(velocity.scale(this.coords.dot(velocity)/u));
+				ev = coords.scale(Math.pow(speed, 2)/u - 1/r).subtract(velocity.scale(coords.dot(velocity)/u));
 
 				// Eccentricity
 				e = ev.mod();
@@ -152,16 +165,26 @@ define(
 				w = ev.getRotation();
 
 				newOrbit = new Ellipse(0, 0, a, b, w);
-				newOrbit.translateFocusTo(this.orbitParent.getGlobalPosition());
+				newOrbit.translateFocusTo(parent.getGlobalPosition());
+
+				// Angular momentum
+				// This would normally be a 3D vector, but since it's
+				// the cross product of two vectors in the orbital plane
+				// just represent it as the remaining Z component
+				h = coords.x * velocity.y - coords.y * velocity.x;
+
+				// The sign of the angular momentum component determines
+				// the direction of the obrit
+				orbitAnticlockwise = h < 0;
 
 				// Draw for debugging
 				newOrbit.draw(ctx.orbits, 'rgba(255, 0, 0, 0.6)');
 
 
-				// Check calculated position of orbiting body on new ellipse
+				// Debug: Check calculated position of orbiting body on new ellipse
 
 				// True anomaly
-				var f = this.coords.getRotation() - ev.getRotation();
+				var f = coords.getRotation() - ev.getRotation();
 
 				// Eccentric anomaly
 				var E = newOrbit.eccentricAnomaly(f);
@@ -179,6 +202,28 @@ define(
 
 				ctx.celestialBodies.restore();
 
+				if (setNewOrbit) {
+					this.orbit = newOrbit;
+					this.orbitParent = parent;
+					this.orbitAnticlockwise = orbitAnticlockwise;
+
+					// Also need to update t
+					// M = n*t --> t = M/n
+					// n = 2pi/P
+					// M = E - e*sin(E)
+					// E and e are known
+
+					var n = Math.PI*2/P;
+					var M = E - e * Math.sin(E);
+					var t = M / n;
+					if (orbitAnticlockwise) {
+						t = -t;
+					}
+
+					this.t = t;
+				}
+
+				// TODO: Need to be able to return the direction of the orbit and position along it as well
 				return newOrbit;
 			}
 		};
@@ -219,7 +264,12 @@ define(
 
 				this.v = v;
 
-				this.recalculateOrbit();
+				// TODO: check if it's changed sphere of influence
+				// If it has, find the intersection point and time of crossover,
+				// then calculate the new orbit for the new orbital parent, and
+				// update the object's orbit
+				// Debug: Show calculated orbit around sun
+				this.recalculateOrbit(sun);
 			}
 		};
 
@@ -292,12 +342,6 @@ define(
 
 				// Calculate velocity by combining tangent vector with speed
 				velocity = tangent.scale(speed);
-
-				// Correct the velocity's direction if necessary
-				if ((E % (Math.PI*2)) < Math.PI) {
-					// E should already be above 0
-					velocity = velocity.scale(-1);
-				}
 
 				return velocity;
 			} else {

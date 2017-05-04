@@ -72,6 +72,11 @@ define(
 				});
 
 				cb.push(moon);
+				window.sun = sun;
+
+				document.getElementById('celestial-bodies').addEventListener('click', function () {
+					moon.recalculateOrbit(sun, true);
+				});
 
 				var planet2 = new CelestialBody({
 					name: 'Planet 2',
@@ -84,7 +89,7 @@ define(
 					orbitAnticlockwise: Math.random() > 0.5
 				});
 
-				cb.push(planet2);
+				// cb.push(planet2);
 			},
 
 			_doStep: function (dt) {
