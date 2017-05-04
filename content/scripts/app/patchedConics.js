@@ -86,6 +86,20 @@ define(
 				});
 
 				system.addCelestialBody(planet2);
+
+				var spaceship2 = new CelestialBody({
+					name: 'Spaceship2',
+					x: -55,
+					y: 0,
+					size: 2,
+					mass: 0,
+
+					r: 255, g: 255, b: 255,
+					orbitParent: planet2,
+					orbitAnticlockwise: Math.random() > 0.5
+				});
+
+				system.addCelestialBody(spaceship2);
 			},
 
 			_doStep: function (dt) {

@@ -78,7 +78,9 @@ define(
 		StellarSystem.prototype.draw = function (ctxBodies, ctxOrbits) {
 			for (i = 0; i < this.celestialBodies.length; i++) {
 				this.celestialBodies[i].draw(ctxBodies);
-				this.celestialBodies[i].drawOrbit(ctxOrbits);
+				if (window.debug) {
+					this.celestialBodies[i].drawOrbit(ctxOrbits);
+				}
 			}
 		};
 

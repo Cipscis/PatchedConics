@@ -26,11 +26,12 @@ define(
 		var config = {
 			// Gravitational constant
 			// G = 6.67408 * Math.pow(10, -11); // m^3 kg^-1 s^-2
-			G: 100000,
+			G: 10000,
 
 			// Number of iterations for calculating mean anomaly
 			iterM: 10
 		};
+		window.debug = true;
 
 		var CelestialBody = function (options) {
 			options = options || {};
@@ -386,17 +387,19 @@ define(
 				this.v = v;
 
 				// Debug: Draw sphere of influence
-				var r = this.sphereOfInfluenceRadius();
-				ctx.celestialBodies.save();
+				if (window.debug) {
+					var r = this.sphereOfInfluenceRadius();
+					ctx.celestialBodies.save();
 
-				var coords = this.getGlobalPosition();
-				ctx.celestialBodies.translate(coords.x, coords.y);
-				ctx.celestialBodies.beginPath();
-				ctx.celestialBodies.strokeStyle = 'rgba(' + this.r + ', ' + this.g + ', ' + this.b + ', 1)';
-				ctx.celestialBodies.arc(0, 0, r, 0, Math.PI*2);
-				ctx.celestialBodies.stroke();
+					var coords = this.getGlobalPosition();
+					ctx.celestialBodies.translate(coords.x, coords.y);
+					ctx.celestialBodies.beginPath();
+					ctx.celestialBodies.strokeStyle = 'rgba(' + this.r + ', ' + this.g + ', ' + this.b + ', 1)';
+					ctx.celestialBodies.arc(0, 0, r, 0, Math.PI*2);
+					ctx.celestialBodies.stroke();
 
-				ctx.celestialBodies.restore();
+					ctx.celestialBodies.restore();
+				}
 			}
 		};
 
