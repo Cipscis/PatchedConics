@@ -46,6 +46,7 @@ define(
 			this.coords = new Vector(this.x, this.y);
 			delete this.x;
 			delete this.y;
+			this.v = new Vector(0, 0);
 
 			if (this.orbitParent) {
 				var r = Math.sqrt(Math.pow(this.coords.x, 2) + Math.pow(this.coords.y, 2));
@@ -72,11 +73,11 @@ define(
 
 		CelestialBody.prototype.getGlobalVelocity = function () {
 			// Untested
-			var v = this.v || new Vector(0, 0),
+			var v = this.v,
 				body = this;
 
 			while (body.orbit) {
-				v = v.add(body.orbitParent.v || new Vector(0, 0));
+				v = v.add(body.orbitParent.v);
 				body = body.orbitParent;
 			}
 
@@ -94,15 +95,7 @@ define(
 			// Untested
 			parent = parent || this.orbitParent;
 
-			var v = this.getGlobalVelocity(),
-				vParent = parent.getGlobalVelocity();
-
-			if (v && vParent) {
-				return this.getGlobalVelocity().subtract(parent.getGlobalVelocity());
-			} else {
-				// Either this or its parent doesn't have a defined global velocity
-				return new Vector(0, 0);
-			}
+			return this.getGlobalVelocity().subtract(parent.getGlobalVelocity());
 		};
 
 		// DETERMINATION //
