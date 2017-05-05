@@ -49,6 +49,7 @@ define(
 				// for all massless bodies. Assume no spheres of influence
 				// of objects with non-negligible mass overlap
 				minD = null;
+				closestPlanet = null;
 				for (j = 1; j < this.celestialBodies.length; j++) {
 					// j = 1 to skip sun
 					planet = this.celestialBodies[j];
