@@ -30,6 +30,7 @@ define(
 			var i, body,
 				j, planet,
 				r, d,
+				minD, closestPlanet,
 				newParent;
 
 			for (i = 0; i < this.celestialBodies.length; i++) {
@@ -47,6 +48,7 @@ define(
 				// Re-evaluate the current sphere of influence
 				// for all massless bodies. Assume no spheres of influence
 				// of objects with non-negligible mass overlap
+				minD = null;
 				for (j = 1; j < this.celestialBodies.length; j++) {
 					// j = 1 to skip sun
 					planet = this.celestialBodies[j];
@@ -60,10 +62,13 @@ define(
 					d = body.getLocalPosition(planet).mod();
 
 					if (d < r) {
-						newParent = planet;
-						break;
+						if (minD === null || d < minD) {
+							minD = d;
+							closestPlanet = planet;
+						}
 					}
 				}
+				newParent = closestPlanet;
 
 				if (!newParent) {
 					newParent = this.celestialBodies[0]; // Sun
