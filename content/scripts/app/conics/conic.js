@@ -6,11 +6,14 @@ define(
 	function (Vector) {
 		// Do all calculations using a system of local coordinates:
 		// treat the x axis as the semimajor axis and the origin as
-		// the centre of the ellipse, then take global coords and
+		// the centre of the conic section, then take global coords and
 		// rotation into account when rendering
 
+		// Ignoring parabolas due to unlikeliness of getting that precise
+		// shape in an environment involving floating point operations
+
 		var Conic = function (x, y, j, n, angle) {
-			// x and y are the coordinates of the conic's main focus
+			// x and y are the coordinates of the conic's centre
 			// j and n are the lengths of the semimajor and semiminor axes
 			// angle is the angle of the semimajor axis measured from the horizontal, in radians
 
@@ -31,21 +34,45 @@ define(
 			}
 
 			// Distance between foci
-			this.a = Math.sqrt(Math.pow(this.j, 2) - Math.pow(this.n, 2));
-		};
-
-		Conic.prototype.eccentricity = function () {
-			var e;
-
 			if (this.j > 0) {
 				// Ellipse
-				e = this.a / this.j;
+				this.a = Math.sqrt(Math.pow(this.j, 2) - Math.pow(this.n, 2));
 			} else {
 				// Hyperbola
-				e = Math.sqrt(1 + (Math.pow(this.n, 2) + Math.pow(this.j, 2)));
+				this.a = Math.sqrt(Math.pow(this.j, 2) + Math.pow(this.n, 2));
 			}
+		};
 
-			return e;
+		Object.defineProperty(Conic.prototype, 'foci', {
+			get: function () {
+				var d,
+					foci;
+
+				if (this.j > 0) {
+					// Elliptical
+					d = new Vector(Math.cos(this.angle) * this.a, Math.sin(this.angle) * this.a);
+				} else {
+					// Hyperbolic
+					d = new Vector(Math.cos(this.angle) * -this.a, Math.sin(this.angle) * -this.a);
+				}
+
+				foci = [
+					this.coords.add(d),
+					this.coords.subtract(d)
+				];
+
+				return foci;
+			}
+		});
+
+		Conic.prototype.eccentricity = function () {
+			if (this.j > 0) {
+				// Ellipse
+				return this.a / this.j;
+			} else {
+				// Hyperbola
+				return Math.sqrt(1 + (Math.pow(this.n, 2) / Math.pow(this.j, 2)));
+			}
 		};
 
 		Conic.prototype.translateTo = function (v) {
@@ -61,8 +88,6 @@ define(
 		};
 
 		Conic.prototype.translateFocusTo = function (v) {
-			// TODO: This is now identical to translateTo, so remove it
-
 			// Treat the first focus as the "main" one
 
 			// Move the main focus to the passed position
@@ -70,34 +95,46 @@ define(
 			var d;
 
 			if (v && v instanceof Vector) {
-				d = v.subtract(this.coords);
+				d = v.subtract(this.foci[0]);
 				this.translate(d);
 			}
 		};
 
-		Conic.prototype.centreOnFocus = function (v) {
-			// Takes in a vector relative to the centre
-			// of an ellipse, and makes it relative to the
-			// main focus instead
-
-			var d = new Vector(Math.cos(this.angle) * this.a, Math.sin(this.angle) * this.a);
-
-			return v.subtract(d);
-		};
-
 		Conic.prototype.getPointAtEccentricAnomaly = function (E) {
-			// Return a point along an ellipse given an eccentric anomaly
-			// The point is relative to the centre of the ellipse
+			// Return a point along a conic section given an
+			// eccentric anomaly, relative to its main focus
 
-			// TODO: Be relative to focus, not centre of ellipse
-			// TODO: Support hyperbola
+			var e, f,
+				r, v;
 
-			var v;
+			e = this.eccentricity();
 
-			v = new Vector(Math.cos(E) * this.j, Math.sin(E) * this.n);
+			if (this.j > 0) {
+				// Ellipse
 
-			v = v.rotate(this.angle);
-			v = this.centreOnFocus(v);
+				// True anomaly
+				f = 2 * Math.atan((Math.sqrt((1 + e)/(1 - e)))*(Math.tan(E / 2)));
+
+				r = this.j * (1 - Math.pow(e, 2)) / (1 + e * Math.cos(f));
+			} else {
+				// Hyperbola
+
+				// True anomaly
+				// tanh(E/2) = sqrt((e-1)/(e+1)) * tan(f/2)
+				// tan(f/2) = tanh(E/2) / sqrt((e-1)/(e+1))
+				// f/2 = atan(tanh(E/2) / sqrt((e-1)/(e+1)))
+				// f = 2 * atan(tahn(E/2) / sqrt((e-1)/(e+1)))
+
+				f = 2 * Math.atan2(Math.sqrt((e-1)/(e+1)), Math.tanh(E/2));
+
+				// Distance from focus
+				// Positive to make it appear on the correct side of the hyperbola
+				r = this.j * (e * Math.cosh(E) - 1);
+
+				var temp = new Vector(r, 0).rotate(f + this.angle);
+			}
+
+			v = new Vector(r, 0).rotate(f + this.angle);
 
 			return v;
 		};
@@ -130,53 +167,93 @@ define(
 
 			var e, E;
 
-			// Ensure f is between 0 and 2*pi
-			f = f % (Math.PI*2);
-			if (f < 0) {
-				f += Math.PI*2;
-			}
-
 			// Eccentricity
 			e = this.eccentricity();
 
 			// Eccentric anomaly
 			if (e < 1) {
 				// Elliptical orbit
-				E = Math.acos((e + Math.cos(f))/(1 + e * Math.cos(f)));
-				if (f > Math.PI) {
-					E = Math.PI*2 - E;
-				}
+				// TODO: This is not always getting the correct result?
+				E = Math.atan2(Math.sqrt(1 - Math.pow(e, 2)) * Math.sin(f), e + Math.cos(f));
 			} else {
 				// Hyperbolic orbit
-				E = Math.acosh((Math.cos(f) - e)/(1 - e * Math.cos(f)));
+				E = Math.acosh((e + Math.cos(f))/(1 + e * Math.cos(f)));
 			}
 
 			return E;
 		};
 
 
-		/////////////
 		// DRAWING //
-		/////////////
 		Conic.prototype.draw = function (ctx, strokeStyle) {
 			if (this.j > 0) {
 				// Ellipse
-
-				var d = new Vector(Math.cos(this.angle) * this.a, Math.sin(this.angle) * this.a);
-				d = this.coords.subtract(d);
 
 				ctx.save();
 
 				ctx.strokeStyle = strokeStyle || '#ffffff';
 
-				ctx.translate(d.x, d.y);
+				ctx.translate(this.coords.x, this.coords.y);
 				ctx.rotate(this.angle);
 				ctx.beginPath();
 				ctx.ellipse(0, 0, this.j, this.n, 0, 0, Math.PI*2);
 				ctx.stroke();
 
 				ctx.restore();
+			} else {
+				// Hyperbola
+
+				ctx.save();
+
+				ctx.strokeStyle = strokeStyle || '#ffffff';
+
+				ctx.translate(this.coords.x, this.coords.y);
+				ctx.rotate(this.angle);
+
+				var segmentsPerSide = 1000;
+				var segmentLength = 1;
+				var i,
+					x, y;
+
+				// Hyperbola with centre at (0, 0):
+				// x^2/a^2 - y^2/b^2 = 1
+				// a and b are known, set y
+
+				ctx.beginPath();
+				for (i = 1-segmentsPerSide; i < segmentsPerSide; i += segmentLength) {
+					y = i * segmentLength;
+
+					// Positive to make it draw the primary focus
+					x = this.j * Math.sqrt(1 + Math.pow(y / this.n, 2));
+
+					if (i === 1-segmentsPerSide) {
+						// First segment
+						ctx.moveTo(x, y);
+					} else {
+						ctx.lineTo(x, y);
+					}
+				}
+				ctx.stroke();
+
+				ctx.restore();
 			}
+		};
+
+		Conic.prototype.drawFoci = function (ctx, fillStyle) {
+			// For debugging, draw the foci of an ellipse
+			ctx.save();
+
+			ctx.fillStyle = fillStyle || '#ffffff';
+
+			ctx.beginPath();
+			ctx.arc(this.foci[0].x, this.foci[0].y, 5, 0, Math.PI*2);
+			ctx.fill();
+
+			ctx.beginPath();
+			ctx.arc(this.foci[1].x, this.foci[1].y, 5, 0, Math.PI*2);
+			ctx.fill();
+
+			ctx.restore();
 		};
 
 		return Conic;

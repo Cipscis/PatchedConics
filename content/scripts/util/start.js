@@ -4,6 +4,7 @@ define(
 	function () {
 		return function (callback, maxDt, inactiveTimeout) {
 			var time = 0;
+			var min = 1/60;
 
 			var doCallback = function (timestamp) {
 				var dt = time ? (timestamp - time)/1000 : 1/60;

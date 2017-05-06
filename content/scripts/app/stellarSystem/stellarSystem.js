@@ -7,7 +7,7 @@ define(
 		var StellarSystem = function (sun) {
 			sun = sun || new CelestialBody({
 				name: 'Sun',
-				x: 400,
+				x: 600,
 				y: 300,
 				size: 15,
 				mass: 600,
@@ -75,8 +75,9 @@ define(
 					newParent = this.celestialBodies[0]; // Sun
 				}
 
-				if (newParent !== body.orbitParent) {
+				if (newParent !== body.orbitParent && !(body.orbitChange > 1)) {
 					body.recalculateOrbit(newParent, true);
+					body.orbitChange = body.orbitChange + 1 || 1;
 				}
 			}
 		};
