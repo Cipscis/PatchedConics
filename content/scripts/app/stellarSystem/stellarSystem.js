@@ -75,9 +75,8 @@ define(
 					newParent = this.celestialBodies[0]; // Sun
 				}
 
-				if (newParent !== body.orbitParent && !(body.orbitChange > 1)) {
+				if (newParent !== body.orbitParent) {
 					body.recalculateOrbit(newParent, true);
-					body.orbitChange = body.orbitChange + 1 || 1;
 				}
 			}
 		};

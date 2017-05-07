@@ -209,7 +209,6 @@ define(
 					orbitAnticlockwise = h < 0;
 				} else {
 					// Hyperbolic
-					// TODO: this isn't always true. Does h need to be determined differently?
 					orbitAnticlockwise = h > 0;
 				}
 
@@ -332,33 +331,42 @@ define(
 					flightPathAngle,
 					tangentAngle;
 
-				// Calculate speed using vis-viva equation
+				// Need to calculate and combine two components to get velocity:
+				// 		Speed
+				// 		Direction
 
+
+				// SPEED //
 				// Standard gravitational parameter
 				u = config.G * this.orbitParent.mass;
 
 				// Distance from orbiting body
 				r = this.coords.mod();
 
+				// Vis-viva equation
 				speed = Math.sqrt(u * (2 / r - 1 / this.orbit.j));
 
+				// DIRECTION //
 				// Calculate flight path angle using true anomaly and eccentricity
 				trueAnomaly = this.coords.getRotation() - this.orbit.angle;
+				
 				e = this.orbit.eccentricity();
 
 				flightPathAngle = Math.atan2(
 					e * Math.sin(trueAnomaly),
 					1 + e * Math.cos(trueAnomaly)
 				);
-				if (this.orbitAnticlockwise) {
-					flightPathAngle += Math.PI;
-				}
 
 				tangentAngle = trueAnomaly + Math.PI/2 -
 					// Flight path angle is measured from radial direction
-					flightPathAngle +
-					// Adjust by orbit's overall angle
+					flightPathAngle -
+					// Adjust by orbit's angle
 					this.orbit.angle;
+
+				// TODO: This is the problem area, it's not the right test to reverse the direction of velocity relative to the parent
+				if (this.orbitAnticlockwise) {
+					tangentAngle += Math.PI;
+				}
 
 
 				velocity = new Vector(speed, 0).rotate(tangentAngle);
