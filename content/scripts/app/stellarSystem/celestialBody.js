@@ -11,6 +11,8 @@ define(
 
 			x: 100,
 			y: 0,
+			vx: 0,
+			vy: 0,
 
 			r: 100,
 			g: 100,
@@ -46,10 +48,17 @@ define(
 			this.coords = new Vector(this.x, this.y);
 			delete this.x;
 			delete this.y;
-			this.v = new Vector(0, 0);
+
+			this.v = new Vector(this.vx, this.vy);
+			delete this.vx;
+			delete this.vy;
 
 			if (this.orbitParent) {
-				this.setInitialOrbit();
+				if (this.v.x || this.v.y) {
+					this.recalculateOrbit(this.orbitParent);
+				} else {
+					this.setInitialOrbit(this.orbitParent);
+				}
 			}
 		};
 
@@ -110,8 +119,10 @@ define(
 			// Distance from orbiting parent
 			r = Math.sqrt(Math.pow(this.coords.x, 2) + Math.pow(this.coords.y, 2));
 
-			this.orbit = new Conic(0, 0, r*1.1, r, this.orbitAnticlockwise ? Math.PI : 0);
+			this.orbit = new Conic(0, 0, r, r, 0);
 			this.orbit.translateFocusTo(this.orbitParent.getGlobalPosition());
+
+			console.warn('Manually setting orbit of ' + this.name);
 		};
 
 		CelestialBody.prototype.recalculateOrbit = function (parent) {
@@ -322,14 +333,14 @@ define(
 			}
 		};
 
-		CelestialBody.prototype.orbitalVelocity = function () {
+		CelestialBody.prototype.orbitalVelocity = function (E) {
 			if (this.orbit) {
 				var u,
 					r,
 					speed, velocity,
 					trueAnomaly, e,
 					flightPathAngle,
-					tangentAngle;
+					tangent;
 
 				// Need to calculate and combine two components to get velocity:
 				// 		Speed
@@ -347,29 +358,9 @@ define(
 				speed = Math.sqrt(u * (2 / r - 1 / this.orbit.j));
 
 				// DIRECTION //
-				// Calculate flight path angle using true anomaly and eccentricity
-				trueAnomaly = this.coords.getRotation() - this.orbit.angle;
-				
-				e = this.orbit.eccentricity();
+				tangent = this.orbit.getTangentAtEccentricAnomaly(E);
 
-				flightPathAngle = Math.atan2(
-					e * Math.sin(trueAnomaly),
-					1 + e * Math.cos(trueAnomaly)
-				);
-
-				tangentAngle = trueAnomaly + Math.PI/2 -
-					// Flight path angle is measured from radial direction
-					flightPathAngle -
-					// Adjust by orbit's angle
-					this.orbit.angle;
-
-				// TODO: This is the problem area, it's not the right test to reverse the direction of velocity relative to the parent
-				if (this.orbitAnticlockwise) {
-					tangentAngle += Math.PI;
-				}
-
-
-				velocity = new Vector(speed, 0).rotate(tangentAngle);
+				velocity = tangent.scale(speed);
 
 				return velocity;
 			} else {
@@ -407,12 +398,11 @@ define(
 				// New coords depends on eccentric anomaly
 				B = this.orbit.getPointAtEccentricAnomaly(E);
 
-				// New velocity depends on position
+				// New velocity depends on position and uses eccentric anomaly
 				this.coords = B;
-				v = this.orbitalVelocity();
+				v = this.orbitalVelocity(E);
 
 				this.v = v;
-
 
 
 				// Debug: Draw sphere of influence

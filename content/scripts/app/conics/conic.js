@@ -140,22 +140,30 @@ define(
 		};
 
 		Conic.prototype.getTangentAtEccentricAnomaly = function (E) {
-			// Return a unit vector that is tangent to the ellipse at a
+			// Return a unit vector that is tangent to the conic at a
 			// given eccentric anomaly
 
 			var tangent,
 				tangentSlope;
 
+
 			if (Math.sin(E) === 0) {
+				// At apsis, so velocity parallel with semiminor axis
 				tangent = new Vector(0, 1);
 			} else {
-				tangentSlope = -(this.n * Math.cos(E))/(this.j * Math.sin(E));
+				if (this.j > 0) {
+					// Ellipse
+					tangentSlope = -(this.n * Math.cos(E)) / (this.j * Math.sin(E));
+				} else {
+					// Hyperbola
+					tangentSlope = -(this.n * Math.cosh(E)) / (this.j * Math.sinh(E));
+				}
 				tangent = new Vector(1, tangentSlope);
 			}
 
 			// Correct the tangent's direction if necessary
+			// TODO: Is this always the correct time to do it? See anticlockwise hyperbolic trajectories
 			if ((Math.abs(E) % (Math.PI*2)) < Math.PI) {
-				// E should already be above 0
 				tangent = tangent.scale(-1);
 			}
 
@@ -173,7 +181,7 @@ define(
 			// Eccentric anomaly
 			if (e < 1) {
 				// Elliptical orbit
-				// TODO: This is not always getting the correct result?
+				// TODO: Is this not always getting the correct result?
 				E = Math.atan2(Math.sqrt(1 - Math.pow(e, 2)) * Math.sin(f), e + Math.cos(f));
 			} else {
 				// Hyperbolic orbit

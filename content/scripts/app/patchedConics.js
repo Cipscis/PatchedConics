@@ -36,75 +36,55 @@ define(
 			},
 
 			_initSystem: function () {
-				system = new StellarSystem();
+				var sun = new CelestialBody({
+					name: 'Sun',
+					x: 600,
+					y: 300,
+					vx: 0,
+					vy: 0,
+
+					size: 15,
+					mass: 600,
+
+					r: 200, g: 200, b: 100
+				});
+
+				system = new StellarSystem(sun);
 
 				var planet = new CelestialBody({
 					name: 'Planet',
-					x: -150,
-					y: 0,
+					y: -50,
+					x: 0,
+					vy: 0,
+					vx: -139,
+
 					size: 3,
 					mass: 10,
 
 					r: 100, g: 200, b: 100,
-					orbitAnticlockwise: true
+
+					orbitParent: sun
 				});
 
 				system.addCelestialBody(planet);
 
-				var spaceshipE = new CelestialBody({
-					name: 'Spaceship E',
-					x: -30,
-					y: 0,
-					size: 2,
-					mass: 0,
-
-					r: 0, g: 255, b: 255,
-					orbitParent: planet,
-					orbitAnticlockwise: false
-				});
-
-				// system.addCelestialBody(spaceshipE);
-
 				var spaceshipH = new CelestialBody({
 					name: 'Spaceship H',
-					x: -180,
+					x: 115,
 					y: 0,
+					vx: 0,
+					vy: 86,
+
 					size: 2,
 					mass: 0,
 
 					r: 255, g: 0, b: 255,
-					// orbitParent: planet,
-					// orbitAnticlockwise: true
+
+					orbitParent: sun,
+					orbitAnticlockwise: true
 				});
 
 				system.addCelestialBody(spaceshipH);
-
-				// var planet2 = new CelestialBody({
-				// 	name: 'Planet 2',
-				// 	x: -200,
-				// 	y: 200,
-				// 	size: 4,
-				// 	mass: 10,
-
-				// 	r: 200, g: 100, b: 100,
-				// 	orbitAnticlockwise: Math.random() > 0.5
-				// });
-
-				// system.addCelestialBody(planet2);
-
-				// var spaceship2 = new CelestialBody({
-				// 	name: 'Spaceship2',
-				// 	x: -55,
-				// 	y: 0,
-				// 	size: 2,
-				// 	mass: 0,
-
-				// 	r: 255, g: 255, b: 0,
-				// 	orbitParent: planet2,
-				// 	orbitAnticlockwise: Math.random() > 0.5
-				// });
-
-				// system.addCelestialBody(spaceship2);
 			},
 
 			_doStep: function (dt) {
