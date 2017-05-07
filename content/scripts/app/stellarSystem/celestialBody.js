@@ -215,13 +215,7 @@ define(
 
 				// The sign of the angular momentum Z component determines
 				// the direction of the orbit in the XY plane
-				if (a > 0) {
-					// Elliptic
-					orbitAnticlockwise = h < 0;
-				} else {
-					// Hyperbolic
-					orbitAnticlockwise = h > 0;
-				}
+				orbitAnticlockwise = h < 0;
 
 
 				// TIME SINCE PERIAPSIS //
@@ -243,7 +237,9 @@ define(
 					M = e * Math.sinh(E) - E;
 				}
 
-				if (orbitAnticlockwise) {
+				if (a > 0 && this.orbitAnticlockwise) {
+					M = -M;
+				} else if (a < 0 && !this.orbitAnticlockwise) {
 					M = -M;
 				}
 
@@ -258,7 +254,7 @@ define(
 				this.orbitAnticlockwise = orbitAnticlockwise;
 				this.t = t;
 
-				console.log(this.name + ' is in a' + (a < 0 ? ' hyperbolic' : 'n elliptic') + ' orbit around ' + parent.name);
+				console.log(this.name + ' is in a' + (a < 0 ? ' hyperbolic' : 'n elliptic') + ' orbit ' + (orbitAnticlockwise ? 'anti' : '') + 'clockwise around ' + parent.name);
 			}
 		};
 
@@ -311,7 +307,9 @@ define(
 				// Calculate mean anomaly
 				M = n * t;
 
-				if (this.orbitAnticlockwise) {
+				if (this.orbit.j > 0 && this.orbitAnticlockwise) {
+					M = -M;
+				} else if (this.orbit.j < 0 && !this.orbitAnticlockwise) {
 					M = -M;
 				}
 
