@@ -237,15 +237,25 @@ define(
 					M = e * Math.sinh(E) - E;
 				}
 
-				if (a > 0 && this.orbitAnticlockwise) {
-					M = -M;
-				} else if (a < 0 && !this.orbitAnticlockwise) {
+				// TODO: This isn't always correct, at least for hyperbolic trajectories
+				if (orbitAnticlockwise) {
 					M = -M;
 				}
 
 				// Calculate time since periapsis
 				n = Math.sqrt(u / Math.abs(Math.pow(a, 3)));
 				t = M / n;
+
+				if (window.debug && this === window.debugCB) {
+					console.log(this.name + ' is in a' + (a < 0 ? ' hyperbolic' : 'n elliptic') + ' orbit ' + (orbitAnticlockwise ? 'anti' : '') + 'clockwise around ' + parent.name);
+					console.log(this.name + ' velocity around prior parent ' + this.orbitParent.name, this.v.x.toFixed(2), this.v.y.toFixed(2));
+					console.log(this.orbitParent.name + ' global velocity', this.orbitParent.getGlobalVelocity().x.toFixed(2), this.orbitParent.getGlobalVelocity().y.toFixed(2));
+					console.log(this.orbitParent.name + ' local velocity', this.orbitParent.v.x.toFixed(2), this.orbitParent.v.y.toFixed(2));
+					console.log(this.name + ' global velocity before orbit change', this.getGlobalVelocity().x.toFixed(2), this.getGlobalVelocity().y.toFixed(2));
+
+					console.log(this.name + ' prior orbit', this.orbit);
+					console.log(this.orbitParent.name + ' orbit', this.orbitParent.orbit);
+				}
 
 				// Set new orbit
 				this.coords = this.getLocalPosition(parent);
@@ -254,7 +264,13 @@ define(
 				this.orbitAnticlockwise = orbitAnticlockwise;
 				this.t = t;
 
-				console.log(this.name + ' is in a' + (a < 0 ? ' hyperbolic' : 'n elliptic') + ' orbit ' + (orbitAnticlockwise ? 'anti' : '') + 'clockwise around ' + parent.name);
+				if (window.debug && this === window.debugCB) {
+					this.update(0);
+					console.log(this.name + ' global velocity after orbit change', this.getGlobalVelocity().x.toFixed(2), this.getGlobalVelocity().y.toFixed(2));
+					console.log(this.name + ' velocity around new parent ' + this.orbitParent.name, this.v.x.toFixed(2), this.v.y.toFixed(2));
+
+					// debugger;
+				}
 			}
 		};
 
@@ -274,9 +290,9 @@ define(
 				// Spheres of influence are only calculated for massive bodies,
 				// and massive bodies should never be on escape trajectories
 
-				console.warn('Massive body ' + this.name + ' on a hyperbolic orbit');
-				console.log(this.orbit);
-				console.trace();
+				// console.warn('Massive body ' + this.name + ' on a hyperbolic orbit');
+				// console.log(this.orbit);
+				// console.trace();
 				return 0;
 			}
 
@@ -307,9 +323,12 @@ define(
 				// Calculate mean anomaly
 				M = n * t;
 
+				// TODO: Is this the correct way to check? Should be consistent with elsewhere
 				if (this.orbit.j > 0 && this.orbitAnticlockwise) {
+					// Elliptical
 					M = -M;
 				} else if (this.orbit.j < 0 && !this.orbitAnticlockwise) {
+					// Hyperbolic
 					M = -M;
 				}
 
@@ -336,8 +355,6 @@ define(
 				var u,
 					r,
 					speed, velocity,
-					trueAnomaly, e,
-					flightPathAngle,
 					tangent;
 
 				// Need to calculate and combine two components to get velocity:
@@ -359,6 +376,10 @@ define(
 				tangent = this.orbit.getTangentAtEccentricAnomaly(E);
 
 				velocity = tangent.scale(speed);
+
+				if (window.debug && this === window.debugCB) {
+					console.log(this.name + ' direction', (velocity.getRotation()/Math.PI*180).toFixed(2));
+				}
 
 				return velocity;
 			} else {

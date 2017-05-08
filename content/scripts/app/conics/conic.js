@@ -128,10 +128,7 @@ define(
 				f = 2 * Math.atan2(Math.sqrt((e-1)/(e+1)), Math.tanh(E/2));
 
 				// Distance from focus
-				// Positive to make it appear on the correct side of the hyperbola
 				r = this.j * (e * Math.cosh(E) - 1);
-
-				var temp = new Vector(r, 0).rotate(f + this.angle);
 			}
 
 			v = new Vector(r, 0).rotate(f + this.angle);
@@ -143,7 +140,8 @@ define(
 			// Return a unit vector that is tangent to the conic at a
 			// given eccentric anomaly
 
-			var tangent,
+			var point,
+				tangent,
 				tangentSlope;
 
 
@@ -154,16 +152,28 @@ define(
 				if (this.j > 0) {
 					// Ellipse
 					tangentSlope = -(this.n * Math.cos(E)) / (this.j * Math.sin(E));
+					tangent = new Vector(1, tangentSlope);
 				} else {
 					// Hyperbola
-					tangentSlope = -(this.n * Math.cosh(E)) / (this.j * Math.sinh(E));
+
+					// Get point relative to focus
+					point = this.getPointAtEccentricAnomaly(E);
+
+					// Convert to relative to centre
+					point = point.add(this.foci[0]).subtract(this.coords);
+
+					// Convert to angle of conic instead of global rotation
+					point = point.rotate(-this.angle);
+
+					tangentSlope = (Math.pow(this.n, 2)*point.x)/(Math.pow(this.j, 2)*point.y);
+					tangent = new Vector(-1, tangentSlope);
 				}
-				tangent = new Vector(1, tangentSlope);
 			}
 
 			// Correct the tangent's direction if necessary
-			// TODO: Is this always the correct time to do it? See anticlockwise hyperbolic trajectories
+			// TODO: This is not always the correct time to reverse the direction
 			if ((Math.abs(E) % (Math.PI*2)) < Math.PI) {
+				// Moving towards apoapsis
 				tangent = tangent.scale(-1);
 			}
 
@@ -243,12 +253,32 @@ define(
 				}
 				ctx.stroke();
 
+				// Debug: Draw other side
+				ctx.beginPath();
+				for (i = 1-segmentsPerSide; i < segmentsPerSide; i += segmentLength) {
+					y = i * segmentLength;
+
+					// Negative to make it draw the primary focus
+					x = -this.j * Math.sqrt(1 + Math.pow(y / this.n, 2));
+
+					if (i === 1-segmentsPerSide) {
+						// First segment
+						ctx.moveTo(x, y);
+					} else {
+						ctx.lineTo(x, y);
+					}
+				}
+				ctx.stroke();
+
 				ctx.restore();
 			}
+
+			// Debug
+			this.drawCentre(ctx, strokeStyle);
 		};
 
 		Conic.prototype.drawFoci = function (ctx, fillStyle) {
-			// For debugging, draw the foci of an ellipse
+			// Debug: Draw the foci
 			ctx.save();
 
 			ctx.fillStyle = fillStyle || '#ffffff';
@@ -259,6 +289,19 @@ define(
 
 			ctx.beginPath();
 			ctx.arc(this.foci[1].x, this.foci[1].y, 5, 0, Math.PI*2);
+			ctx.fill();
+
+			ctx.restore();
+		};
+
+		Conic.prototype.drawCentre = function (ctx, fillStyle) {
+			// Debug: Draw the centre
+			ctx.save();
+
+			ctx.fillStyle = fillStyle || '#ffffff';
+
+			ctx.beginPath();
+			ctx.arc(this.coords.x, this.coords.y, 5, 0, Math.PI*2);
 			ctx.fill();
 
 			ctx.restore();
