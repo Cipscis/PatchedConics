@@ -75,10 +75,15 @@ define(
 					newParent = this.celestialBodies[0]; // Sun
 				}
 
-				var maxOrbitChanges = 4;
+				var maxOrbitChanges = 2;
 				if (newParent !== body.orbitParent && (body.orbitsChanged || 0) < maxOrbitChanges) {
 					body.recalculateOrbit(newParent, true);
+
+					// Debug
 					// body.orbitsChanged = 1 + (body.orbitsChanged || 0);
+					// if (body.orbitsChanged >= maxOrbitChanges) {
+					// 	debugger;
+					// }
 				}
 			}
 		};

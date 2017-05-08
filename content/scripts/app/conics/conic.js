@@ -166,18 +166,26 @@ define(
 					point = point.rotate(-this.angle);
 
 					tangentSlope = (Math.pow(this.n, 2)*point.x)/(Math.pow(this.j, 2)*point.y);
-					tangent = new Vector(-1, tangentSlope);
+
+					// TODO: Are there some cases in which this needs to be rotated by 90 degrees?
+					// i.e. change the sign of the x component
+					tangent = new Vector(1, tangentSlope);
 				}
 			}
 
+			var mod = function (x, y) {
+				return ((x % y) + y) % y;
+			};
+
 			// Correct the tangent's direction if necessary
-			// TODO: This is not always the correct time to reverse the direction
-			if ((Math.abs(E) % (Math.PI*2)) < Math.PI) {
+			if (mod(E, Math.PI*2) < Math.PI) {
 				// Moving towards apoapsis
 				tangent = tangent.scale(-1);
 			}
 
-			return tangent.normalise().rotate(this.angle);
+			tangent = tangent.normalise().rotate(this.angle);
+
+			return tangent;
 		};
 
 		Conic.prototype.eccentricAnomaly = function (f) {
@@ -191,7 +199,6 @@ define(
 			// Eccentric anomaly
 			if (e < 1) {
 				// Elliptical orbit
-				// TODO: Is this not always getting the correct result?
 				E = Math.atan2(Math.sqrt(1 - Math.pow(e, 2)) * Math.sin(f), e + Math.cos(f));
 			} else {
 				// Hyperbolic orbit

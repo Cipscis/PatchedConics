@@ -10,7 +10,6 @@ define(
 		var ctx = {};
 
 		// For debugging purposes
-		window.ctx = ctx;
 		window.debug = true;
 		window.debugCB = null;
 
@@ -27,13 +26,13 @@ define(
 
 				// Game._initHyperbolicTest(1);
 
-				// TODO: Current failure point is simple hyperbolic transfer test
-				Game._initHyperbolicSimpleTransferTest(1);
+				// Game._initHyperbolicSimpleTransferTest(1);
 
-				// TODO: Also failing: transfer between elliptical orbits has direction reversing
 				// Game._initHyperbolicSimpleTransferTest(0.9);
 
-				// Game._initHyperbolicComplexTransferTest(1);
+				// TODO: Failing, blue spacecraft gets stuck going back and forth
+				// in hyperbolic trajectories. Velocity direction calculated to be incorrect
+				Game._initHyperbolicComplexTransferTest(1);
 
 				start(Game._doStep, 100, 0.5);
 			},
@@ -281,7 +280,6 @@ define(
 				});
 
 				system.addCelestialBody(spaceship);
-				window.debugCB = spaceship;
 
 				var spaceship2 = new CelestialBody({
 					name: 'Purple Spaceship',
@@ -299,6 +297,8 @@ define(
 				});
 
 				system.addCelestialBody(spaceship2);
+
+				window.debugCB = spaceship2;
 			},
 
 			_initHyperbolicComplexTransferTest: function (scale) {
@@ -336,8 +336,8 @@ define(
 
 				system.addCelestialBody(planet);
 
-				var spaceshipP = new CelestialBody({
-					name: 'Spaceship P',
+				var spaceshipY = new CelestialBody({
+					name: 'Yellow Spaceship',
 					x: -20,
 					y: 0,
 					vx: 0,
@@ -352,10 +352,10 @@ define(
 					orbitAnticlockwise: true
 				});
 
-				system.addCelestialBody(spaceshipP);
+				system.addCelestialBody(spaceshipY);
 
-				var spaceshipH = new CelestialBody({
-					name: 'Spaceship H',
+				var spaceshipP = new CelestialBody({
+					name: 'Purple Spaceship',
 					x: 115,
 					y: 0,
 					vx: 0,
@@ -370,10 +370,10 @@ define(
 					orbitAnticlockwise: true
 				});
 
-				system.addCelestialBody(spaceshipH);
+				system.addCelestialBody(spaceshipP);
 
-				var spaceshipE = new CelestialBody({
-					name: 'Spaceship E',
+				var spaceshipT = new CelestialBody({
+					name: 'Teal Spaceship',
 					x: -80,
 					y: 0,
 					vx: 0,
@@ -388,7 +388,9 @@ define(
 					orbitAnticlockwise: true
 				});
 
-				system.addCelestialBody(spaceshipE);
+				system.addCelestialBody(spaceshipT);
+
+				window.debugCB = spaceshipT;
 			},
 
 			_doStep: function (dt) {
@@ -431,8 +433,10 @@ define(
 				ctx.celestialBodies.save();
 				ctx.orbits.save();
 
-				// ctx.celestialBodies.scale(0.5, 0.5);
-				// ctx.orbits.scale(0.5, 0.5);
+				var scale = 1;
+
+				ctx.celestialBodies.scale(scale, scale);
+				ctx.orbits.scale(scale, scale);
 
 				system.draw(ctx.celestialBodies, ctx.orbits);
 

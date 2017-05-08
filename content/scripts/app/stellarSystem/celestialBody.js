@@ -140,6 +140,10 @@ define(
 
 			parent = parent || this.orbitParent;
 
+			if (window.debug && this === window.debugCB) {
+				console.log('');
+			}
+
 			if (parent) {
 				var u,
 					coords, r,
@@ -237,9 +241,25 @@ define(
 					M = e * Math.sinh(E) - E;
 				}
 
-				// TODO: This isn't always correct, at least for hyperbolic trajectories
-				if (orbitAnticlockwise) {
-					M = -M;
+				if (e < 1) {
+					// Elliptical orbit
+					if (orbitAnticlockwise) {
+						M = -M;
+					}
+				} else {
+					// Hyperbolic orbit
+
+					// Need to determing if it's moving towards the focus or
+					// away from it, and set the sign of mean anomaly as appropriate
+					var toFocus = newOrbit.foci[0].subtract(this.getGlobalPosition());
+					var movingToFocus = toFocus.add(velocity);
+					var movingFromFocus = toFocus.subtract(velocity);
+
+					if (movingFromFocus.mod() < movingToFocus.mod()) {
+						M = -Math.abs(M);
+					} else {
+						M = Math.abs(M);
+					}
 				}
 
 				// Calculate time since periapsis
@@ -247,8 +267,9 @@ define(
 				t = M / n;
 
 				if (window.debug && this === window.debugCB) {
-					console.log(this.name + ' is in a' + (a < 0 ? ' hyperbolic' : 'n elliptic') + ' orbit ' + (orbitAnticlockwise ? 'anti' : '') + 'clockwise around ' + parent.name);
+					console.log(this.name + ' was in a' + (this.orbit.j < 0 ? ' hyperbolic' : 'n elliptic') + ' orbit ' + (this.orbitAnticlockwise ? 'anti' : '') + 'clockwise around ' + this.orbitParent.name);
 					console.log(this.name + ' velocity around prior parent ' + this.orbitParent.name, this.v.x.toFixed(2), this.v.y.toFixed(2));
+					console.log(this.name + ' time since periapsis in old orbit', this.t);
 					console.log(this.orbitParent.name + ' global velocity', this.orbitParent.getGlobalVelocity().x.toFixed(2), this.orbitParent.getGlobalVelocity().y.toFixed(2));
 					console.log(this.orbitParent.name + ' local velocity', this.orbitParent.v.x.toFixed(2), this.orbitParent.v.y.toFixed(2));
 					console.log(this.name + ' global velocity before orbit change', this.getGlobalVelocity().x.toFixed(2), this.getGlobalVelocity().y.toFixed(2));
@@ -266,8 +287,11 @@ define(
 
 				if (window.debug && this === window.debugCB) {
 					this.update(0);
+					console.log(this.name + ' is entering a' + (this.orbit.j < 0 ? ' hyperbolic' : 'n elliptic') + ' orbit ' + (this.orbitAnticlockwise ? 'anti' : '') + 'clockwise around ' + this.orbitParent.name);
 					console.log(this.name + ' global velocity after orbit change', this.getGlobalVelocity().x.toFixed(2), this.getGlobalVelocity().y.toFixed(2));
 					console.log(this.name + ' velocity around new parent ' + this.orbitParent.name, this.v.x.toFixed(2), this.v.y.toFixed(2));
+					console.log(this.orbitParent.name + ' global velocity', this.orbitParent.getGlobalVelocity().x.toFixed(2), this.orbitParent.getGlobalVelocity().y.toFixed(2));
+					console.log(this.name + ' time since periapsis in new orbit', this.t);
 
 					// debugger;
 				}
@@ -324,11 +348,7 @@ define(
 				M = n * t;
 
 				// TODO: Is this the correct way to check? Should be consistent with elsewhere
-				if (this.orbit.j > 0 && this.orbitAnticlockwise) {
-					// Elliptical
-					M = -M;
-				} else if (this.orbit.j < 0 && !this.orbitAnticlockwise) {
-					// Hyperbolic
+				if (this.orbit.j > 0 === this.orbitAnticlockwise) {
 					M = -M;
 				}
 
@@ -375,10 +395,17 @@ define(
 				// DIRECTION //
 				tangent = this.orbit.getTangentAtEccentricAnomaly(E);
 
-				velocity = tangent.scale(speed);
+				if (this.orbitAnticlockwise === this.orbit.j > 0) {
+					velocity = tangent.scale(-speed);
+				} else {
+					velocity = tangent.scale(speed);
+				}
 
 				if (window.debug && this === window.debugCB) {
-					console.log(this.name + ' direction', (velocity.getRotation()/Math.PI*180).toFixed(2));
+					// console.log(this.name + ' eccentric anomaly', (E/Math.PI*180).toFixed(2));
+					// console.log(this.name + ' direction', (velocity.getRotation()/Math.PI*180).toFixed(2));
+					// console.log(this.name + ' speed', speed.toFixed(2));
+					// console.log(this.name + ' velocity', velocity.x.toFixed(2), velocity.y.toFixed(2));
 				}
 
 				return velocity;
@@ -422,22 +449,6 @@ define(
 				v = this.orbitalVelocity(E);
 
 				this.v = v;
-
-
-				// Debug: Draw sphere of influence
-				if (window.debug) {
-					var r = this.sphereOfInfluenceRadius();
-					ctx.celestialBodies.save();
-
-					var coords = this.getGlobalPosition();
-					ctx.celestialBodies.translate(coords.x, coords.y);
-					ctx.celestialBodies.beginPath();
-					ctx.celestialBodies.strokeStyle = 'rgba(' + this.r + ', ' + this.g + ', ' + this.b + ', 1)';
-					ctx.celestialBodies.arc(0, 0, r, 0, Math.PI*2);
-					ctx.celestialBodies.stroke();
-
-					ctx.celestialBodies.restore();
-				}
 			}
 		};
 
@@ -456,6 +467,21 @@ define(
 			ctx.fill();
 
 			ctx.restore();
+
+			// Debug: Draw sphere of influence
+			if (window.debug && this.orbit) {
+				var r = this.sphereOfInfluenceRadius();
+				ctx.save();
+
+				var coords = this.getGlobalPosition();
+				ctx.translate(coords.x, coords.y);
+				ctx.beginPath();
+				ctx.strokeStyle = 'rgba(' + this.r + ', ' + this.g + ', ' + this.b + ', 1)';
+				ctx.arc(0, 0, r, 0, Math.PI*2);
+				ctx.stroke();
+
+				ctx.restore();
+			}
 		};
 
 		CelestialBody.prototype.drawOrbit = function (ctx) {
