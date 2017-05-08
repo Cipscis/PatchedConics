@@ -145,41 +145,42 @@ define(
 				tangentSlope;
 
 
+			// Get point relative to focus
+			point = this.getPointAtEccentricAnomaly(E);
+
+			// Convert to relative to centre
+			point = point.add(this.foci[0]).subtract(this.coords);
+
+			// Convert to angle of conic instead of global rotation
+			point = point.rotate(-this.angle);
+
 			if (Math.sin(E) === 0) {
 				// At apsis, so velocity parallel with semiminor axis
 				tangent = new Vector(0, 1);
 			} else {
 				if (this.j > 0) {
 					// Ellipse
-					tangentSlope = -(this.n * Math.cos(E)) / (this.j * Math.sin(E));
+					tangentSlope = -(Math.pow(this.n, 2)*point.x)/(Math.pow(this.j, 2)*point.y);
 					tangent = new Vector(1, tangentSlope);
 				} else {
 					// Hyperbola
-
-					// Get point relative to focus
-					point = this.getPointAtEccentricAnomaly(E);
-
-					// Convert to relative to centre
-					point = point.add(this.foci[0]).subtract(this.coords);
-
-					// Convert to angle of conic instead of global rotation
-					point = point.rotate(-this.angle);
-
 					tangentSlope = (Math.pow(this.n, 2)*point.x)/(Math.pow(this.j, 2)*point.y);
-
-					// TODO: Are there some cases in which this needs to be rotated by 90 degrees?
-					// i.e. change the sign of the x component
 					tangent = new Vector(1, tangentSlope);
 				}
 			}
 
-			var mod = function (x, y) {
-				return ((x % y) + y) % y;
-			};
-
 			// Correct the tangent's direction if necessary
-			if (mod(E, Math.PI*2) < Math.PI) {
-				// Moving towards apoapsis
+			var leavingPeriapsis;
+			if (this.j > 0) {
+				// Ellipse
+				leavingPeriapsis = Math.sin(E) > 0;
+			} else {
+				// Hyperbola
+				leavingPeriapsis = E > 0;
+			}
+
+			if (leavingPeriapsis) {
+				// Moving away from periapsis
 				tangent = tangent.scale(-1);
 			}
 

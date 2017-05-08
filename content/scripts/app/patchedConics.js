@@ -21,17 +21,13 @@ define(
 			init: function () {
 				Game._initCtx();
 				// Game._initEllipseTest(1);
+				// Game._initHyperbolicTest(1);
 
 				// Game._initEllipseSimpleTransferTest(1);
 
-				// Game._initHyperbolicTest(1);
-
 				// Game._initHyperbolicSimpleTransferTest(1);
-
 				// Game._initHyperbolicSimpleTransferTest(0.9);
 
-				// TODO: Failing, blue spacecraft gets stuck going back and forth
-				// in hyperbolic trajectories. Velocity direction calculated to be incorrect
 				Game._initHyperbolicComplexTransferTest(1);
 
 				start(Game._doStep, 100, 0.5);
