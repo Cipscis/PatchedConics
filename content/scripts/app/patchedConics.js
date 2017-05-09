@@ -3,10 +3,11 @@ define(
 		'util/start',
 
 		'stellarSystem/stellarSystem',
-		'stellarSystem/celestialBody'
+		'stellarSystem/attractor',
+		'stellarSystem/orbiter'
 	],
 
-	function (start, StellarSystem, CelestialBody) {
+	function (start, StellarSystem, Attractor, Orbiter) {
 		var ctx = {};
 
 		// For debugging purposes
@@ -20,7 +21,7 @@ define(
 		var Game = {
 			init: function () {
 				Game._initCtx();
-				Game._initEllipseTest(1);
+				// Game._initEllipseTest(1);
 				// Game._initHyperbolicTest(1);
 
 				// Game._initEllipseSimpleTransferTest(1);
@@ -28,7 +29,7 @@ define(
 				// Game._initHyperbolicSimpleTransferTest(1);
 				// Game._initHyperbolicSimpleTransferTest(0.9);
 
-				// Game._initHyperbolicComplexTransferTest(1);
+				Game._initHyperbolicComplexTransferTest(1);
 
 				start(Game._doStep, 100, 0.5);
 			},
@@ -46,7 +47,7 @@ define(
 			_initEllipseTest: function (scale) {
 				scale = scale || 1;
 
-				var sun = new CelestialBody({
+				var sun = new Attractor({
 					name: 'Sun',
 					x: 600,
 					y: 300,
@@ -61,7 +62,7 @@ define(
 
 				system = new StellarSystem(sun);
 
-				var planet = new CelestialBody({
+				var planet = new Attractor({
 					name: 'Planet',
 					y: -50,
 					x: 30,
@@ -78,7 +79,7 @@ define(
 
 				system.addCelestialBody(planet);
 
-				var planet2 = new CelestialBody({
+				var planet2 = new Attractor({
 					name: 'Planet2',
 					y: 20,
 					x: 90,
@@ -101,7 +102,7 @@ define(
 			_initEllipseSimpleTransferTest: function (scale) {
 				scale = scale || 1;
 
-				var sun = new CelestialBody({
+				var sun = new Attractor({
 					name: 'Sun',
 					x: 600,
 					y: 300,
@@ -116,7 +117,7 @@ define(
 
 				system = new StellarSystem(sun);
 
-				var planet = new CelestialBody({
+				var planet = new Attractor({
 					name: 'Planet',
 					y: -50,
 					x: 30,
@@ -133,7 +134,7 @@ define(
 
 				system.addCelestialBody(planet);
 
-				var planet2 = new CelestialBody({
+				var planet2 = new Attractor({
 					name: 'Planet2',
 					y: 20,
 					x: 90,
@@ -150,7 +151,7 @@ define(
 
 				system.addCelestialBody(planet2);
 
-				var spaceship = new CelestialBody({
+				var spaceship = new Orbiter({
 					name: 'Spaceship',
 					y: 0,
 					x: 10,
@@ -173,7 +174,7 @@ define(
 			_initHyperbolicTest: function (scale) {
 				scale = scale || 1;
 
-				var sun = new CelestialBody({
+				var sun = new Attractor({
 					name: 'Sun',
 					x: 600,
 					y: 300,
@@ -188,7 +189,7 @@ define(
 
 				system = new StellarSystem(sun);
 
-				var planet = new CelestialBody({
+				var planet = new Attractor({
 					name: 'Planet',
 					y: -50,
 					x: 110,
@@ -205,7 +206,7 @@ define(
 
 				system.addCelestialBody(planet);
 
-				var planet2 = new CelestialBody({
+				var planet2 = new Attractor({
 					name: 'Planet2',
 					y: 110,
 					x: 90,
@@ -228,7 +229,7 @@ define(
 			_initHyperbolicSimpleTransferTest: function (scale) {
 				scale = scale || 1;
 
-				var sun = new CelestialBody({
+				var sun = new Attractor({
 					name: 'Sun',
 					x: 600,
 					y: 300,
@@ -243,7 +244,7 @@ define(
 
 				system = new StellarSystem(sun);
 
-				var planet = new CelestialBody({
+				var planet = new Attractor({
 					name: 'Planet',
 					y: -50,
 					x: 30,
@@ -260,7 +261,7 @@ define(
 
 				system.addCelestialBody(planet);
 
-				var spaceship = new CelestialBody({
+				var spaceship = new Orbiter({
 					name: 'Yellow Spaceship',
 					y: 0,
 					x: 10,
@@ -277,7 +278,7 @@ define(
 
 				system.addCelestialBody(spaceship);
 
-				var spaceship2 = new CelestialBody({
+				var spaceship2 = new Orbiter({
 					name: 'Purple Spaceship',
 					y: 0,
 					x: 10,
@@ -300,7 +301,7 @@ define(
 			_initHyperbolicComplexTransferTest: function (scale) {
 				scale = scale || 1;
 
-				var sun = new CelestialBody({
+				var sun = new Attractor({
 					name: 'Sun',
 					x: 600,
 					y: 300,
@@ -315,7 +316,7 @@ define(
 
 				system = new StellarSystem(sun);
 
-				var planet = new CelestialBody({
+				var planet = new Attractor({
 					name: 'Planet',
 					y: -50,
 					x: 0,
@@ -332,7 +333,7 @@ define(
 
 				system.addCelestialBody(planet);
 
-				var spaceshipY = new CelestialBody({
+				var spaceshipY = new Orbiter({
 					name: 'Yellow Spaceship',
 					x: -20,
 					y: 0,
@@ -349,7 +350,7 @@ define(
 
 				system.addCelestialBody(spaceshipY);
 
-				var spaceshipP = new CelestialBody({
+				var spaceshipP = new Orbiter({
 					name: 'Purple Spaceship',
 					x: 115,
 					y: 0,
@@ -366,7 +367,7 @@ define(
 
 				system.addCelestialBody(spaceshipP);
 
-				var spaceshipT = new CelestialBody({
+				var spaceshipT = new Orbiter({
 					name: 'Teal Spaceship',
 					x: -80,
 					y: 0,

@@ -1,11 +1,12 @@
 define(
 	[
-		'stellarSystem/celestialBody'
+		'stellarSystem/attractor',
+		'stellarSystem/orbiter'
 	],
 
-	function (CelestialBody) {
+	function (Attractor, Orbiter) {
 		var StellarSystem = function (sun) {
-			sun = sun || new CelestialBody({
+			sun = sun || new Attractor({
 				name: 'Sun',
 				x: 600,
 				y: 300,
@@ -40,7 +41,7 @@ define(
 			for (i = 0; i < this.celestialBodies.length; i++) {
 				body = this.celestialBodies[i];
 
-				if (body.mass) {
+				if (body instanceof Attractor) {
 					// Only worry about objects with negligible mass
 					continue;
 				}
@@ -54,7 +55,7 @@ define(
 					// j = 1 to skip sun
 					planet = this.celestialBodies[j];
 
-					if (!planet.mass) {
+					if (planet instanceof Orbiter) {
 						// Only worry about objects with non-negligible mass
 						continue;
 					}
