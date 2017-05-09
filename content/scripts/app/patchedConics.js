@@ -20,7 +20,7 @@ define(
 		var Game = {
 			init: function () {
 				Game._initCtx();
-				// Game._initEllipseTest(1);
+				Game._initEllipseTest(1);
 				// Game._initHyperbolicTest(1);
 
 				// Game._initEllipseSimpleTransferTest(1);
@@ -28,7 +28,7 @@ define(
 				// Game._initHyperbolicSimpleTransferTest(1);
 				// Game._initHyperbolicSimpleTransferTest(0.9);
 
-				Game._initHyperbolicComplexTransferTest(1);
+				// Game._initHyperbolicComplexTransferTest(1);
 
 				start(Game._doStep, 100, 0.5);
 			},
@@ -73,7 +73,7 @@ define(
 
 					r: 100, g: 200, b: 100,
 
-					orbitParent: sun
+					attractor: sun
 				});
 
 				system.addCelestialBody(planet);
@@ -90,7 +90,7 @@ define(
 
 					r: 200, g: 100, b: 100,
 
-					orbitParent: sun
+					attractor: sun
 				});
 
 				system.addCelestialBody(planet2);
@@ -128,7 +128,7 @@ define(
 
 					r: 100, g: 200, b: 100,
 
-					orbitParent: sun
+					attractor: sun
 				});
 
 				system.addCelestialBody(planet);
@@ -145,7 +145,7 @@ define(
 
 					r: 200, g: 100, b: 100,
 
-					orbitParent: sun
+					attractor: sun
 				});
 
 				system.addCelestialBody(planet2);
@@ -162,7 +162,7 @@ define(
 
 					r: 200, g: 200, b: 200,
 
-					orbitParent: planet
+					attractor: planet
 				});
 
 				system.addCelestialBody(spaceship);
@@ -200,7 +200,7 @@ define(
 
 					r: 100, g: 200, b: 100,
 
-					orbitParent: sun
+					attractor: sun
 				});
 
 				system.addCelestialBody(planet);
@@ -217,7 +217,7 @@ define(
 
 					r: 200, g: 100, b: 100,
 
-					orbitParent: sun
+					attractor: sun
 				});
 
 				system.addCelestialBody(planet2);
@@ -255,7 +255,7 @@ define(
 
 					r: 100, g: 200, b: 100,
 
-					orbitParent: sun
+					attractor: sun
 				});
 
 				system.addCelestialBody(planet);
@@ -272,7 +272,7 @@ define(
 
 					r: 255, g: 255, b: 0,
 
-					orbitParent: planet
+					attractor: planet
 				});
 
 				system.addCelestialBody(spaceship);
@@ -289,7 +289,7 @@ define(
 
 					r: 255, g: 0, b: 255,
 
-					orbitParent: planet
+					attractor: planet
 				});
 
 				system.addCelestialBody(spaceship2);
@@ -327,7 +327,7 @@ define(
 
 					r: 100, g: 200, b: 100,
 
-					orbitParent: sun
+					attractor: sun
 				});
 
 				system.addCelestialBody(planet);
@@ -344,7 +344,7 @@ define(
 
 					r: 255, g: 255, b: 0,
 
-					orbitParent: planet
+					attractor: planet
 				});
 
 				system.addCelestialBody(spaceshipY);
@@ -361,7 +361,7 @@ define(
 
 					r: 255, g: 0, b: 255,
 
-					orbitParent: sun
+					attractor: sun
 				});
 
 				system.addCelestialBody(spaceshipP);
@@ -378,7 +378,7 @@ define(
 
 					r: 0, g: 255, b: 255,
 
-					orbitParent: sun
+					attractor: sun
 				});
 
 				system.addCelestialBody(spaceshipT);

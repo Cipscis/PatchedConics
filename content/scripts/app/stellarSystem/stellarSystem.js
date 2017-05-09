@@ -21,7 +21,7 @@ define(
 		StellarSystem.prototype.addCelestialBody = function (celestialBody) {
 			this.celestialBodies.push(celestialBody);
 
-			if (!celestialBody.orbitParent) {
+			if (!(celestialBody.orbit && celestialBody.orbit.attractor)) {
 				celestialBody.setInitialOrbit(this.celestialBodies[0]);
 			}
 		};
@@ -75,15 +75,8 @@ define(
 					newParent = this.celestialBodies[0]; // Sun
 				}
 
-				var maxOrbitChanges = 2;
-				if (newParent !== body.orbitParent && (body.orbitsChanged || 0) < maxOrbitChanges) {
-					body.recalculateOrbit(newParent, true);
-
-					// Debug
-					// body.orbitsChanged = 1 + (body.orbitsChanged || 0);
-					// if (body.orbitsChanged >= maxOrbitChanges) {
-					// 	debugger;
-					// }
+				if (newParent !== body.orbit.attractor) {
+					body.recalculateOrbit(newParent);
 				}
 			}
 		};

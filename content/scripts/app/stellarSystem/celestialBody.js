@@ -21,8 +21,7 @@ define(
 			size: 50,
 			mass: 50,
 
-			orbitParent: undefined,
-			orbitAnticlockwise: false
+			attractor: undefined
 		};
 
 		var config = {
@@ -53,11 +52,17 @@ define(
 			delete this.vx;
 			delete this.vy;
 
-			if (this.orbitParent) {
+			if (this.attractor) {
+				this.orbit = new Orbit({
+					orbiter: this,
+					attractor: this.attractor
+				});
+				delete this.attractor;
+
 				if (this.v.x || this.v.y) {
-					this.recalculateOrbit(this.orbitParent);
+					this.recalculateOrbit(this.attractor);
 				} else {
-					this.setInitialOrbit(this.orbitParent);
+					this.setInitialOrbit(this.attractor);
 				}
 			}
 		};
@@ -71,9 +76,9 @@ define(
 			var coords = this.coords,
 				body = this;
 
-			while (body.orbitParent) {
-				coords = coords.add(body.orbitParent.coords);
-				body = body.orbitParent;
+			while (body.orbit) {
+				coords = coords.add(body.orbit.attractor.coords);
+				body = body.orbit.attractor;
 			}
 
 			return coords;
@@ -83,20 +88,20 @@ define(
 			var v = this.v,
 				body = this;
 
-			while (body.orbitParent) {
-				v = v.add(body.orbitParent.v);
-				body = body.orbitParent;
+			while (body.orbit) {
+				v = v.add(body.orbit.attractor.v);
+				body = body.orbit.attractor;
 			}
 
 			return v;
 		};
 
 		CelestialBody.prototype.getLocalPosition = function (parent) {
-			parent = parent || this.orbitParent;
+			parent = parent || (this.orbit && this.orbit.attractor);
 
 			var coords;
 
-			if (parent === this.orbitParent) {
+			if (parent === (this.orbit && this.orbit.attractor)) {
 				coords = this.coords;
 			} else {
 				coords = this.getGlobalPosition().subtract(parent.getGlobalPosition());
@@ -106,11 +111,11 @@ define(
 		};
 
 		CelestialBody.prototype.getLocalVelocity = function (parent) {
-			parent = parent || this.orbitParent;
+			parent = parent || (this.orbit && this.orbit.attractor);
 
 			var v;
 
-			if (parent === this.orbitParent) {
+			if (parent === (this.orbit && this.orbit.attractor)) {
 				v = this.v;
 			} else {
 				v = this.getGlobalVelocity().subtract(parent.getGlobalVelocity());
@@ -127,7 +132,7 @@ define(
 			// its orbital parent and orbital parameters. The body's
 			// velocity will be calculated from this during update step
 
-			this.orbitParent = parent || this.orbitParent;
+			parent = parent || (this.orbit && this.orbit.attractor);
 
 			var r;
 
@@ -158,7 +163,7 @@ define(
 			// 		The time since periapsis of the new orbit
 			// 			Scalar time value
 
-			parent = parent || this.orbitParent;
+			parent = parent || (this.orbit && this.orbit.attractor);
 
 			if (parent) {
 				var u,
@@ -290,7 +295,6 @@ define(
 
 				// Set new orbit
 				this.coords = this.getLocalPosition(parent);
-				this.orbitParent = parent;
 				this.orbit = newOrbit;
 				this.orbit.anticlockwise = orbitAnticlockwise;
 				this.orbit.t = t;
@@ -320,7 +324,7 @@ define(
 			}
 
 			if (this.orbit) {
-				return this.orbit.a * Math.pow(this.mass / this.orbitParent.mass, 2/5);
+				return this.orbit.a * Math.pow(this.mass / this.orbit.attractor.mass, 2/5);
 			}
 		};
 
@@ -338,7 +342,7 @@ define(
 				e = this.orbit.eccentricity();
 
 				// Standard gravitational parameter
-				u = config.G * this.orbitParent.mass;
+				u = config.G * this.orbit.attractor.mass;
 
 				// Mean motion
 				n = Math.sqrt(u / Math.abs(Math.pow(this.orbit.a, 3)));
@@ -390,7 +394,7 @@ define(
 
 				// SPEED //
 				// Standard gravitational parameter
-				u = config.G * this.orbitParent.mass;
+				u = config.G * this.orbit.attractor.mass;
 
 				// Distance from orbiting body
 				r = this.coords.mod();
@@ -488,7 +492,7 @@ define(
 
 		CelestialBody.prototype.drawOrbit = function (ctx) {
 			if (this.orbit) {
-				this.orbit.translateFocusTo(this.orbitParent.getGlobalPosition());
+				this.orbit.translateFocusTo(this.orbit.attractor.getGlobalPosition());
 				this.orbit.draw(ctx, 'rgba(' + this.r + ', ' + this.g + ', ' + this.b + ', 0.3)');
 			}
 		};
