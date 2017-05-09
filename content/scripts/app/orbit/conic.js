@@ -12,26 +12,11 @@ define(
 		// Ignoring parabolas due to unlikeliness of getting that precise
 		// shape in an environment involving floating point operations
 
-		var Conic = function (x, y, j, n, angle) {
-			// x and y are the coordinates of the conic's centre
+		var Conic = function (j, n) {
 			// j and n are the lengths of the semimajor and semiminor axes
-			// angle is the angle of the semimajor axis measured from the horizontal, in radians
 
-			this.coords = new Vector(x, y);
 			this.j = j;
 			this.n = n;
-			this.angle = angle;
-
-			if (this.j > 0 && this.n > this.j) {
-				// Ellipse but semiminor axis larger than semimajor axis
-				// Use a as temp, swap n and j so j is larger
-				a = this.j;
-				this.j = this.n;
-				this.n = a;
-
-				// Increment angle by pi/2 to compensate for swap
-				this.angle += Math.PI/2;
-			}
 
 			// Distance between foci
 			if (this.j > 0) {
@@ -50,15 +35,15 @@ define(
 
 				if (this.j > 0) {
 					// Elliptical
-					d = new Vector(Math.cos(this.angle) * this.a, Math.sin(this.angle) * this.a);
+					d = new Vector(this.a, 0);
 				} else {
 					// Hyperbolic
-					d = new Vector(Math.cos(this.angle) * -this.a, Math.sin(this.angle) * -this.a);
+					d = new Vector(-this.a, 0);
 				}
 
 				foci = [
-					this.coords.add(d),
-					this.coords.subtract(d)
+					d,
+					d.scale(-1)
 				];
 
 				return foci;
@@ -72,31 +57,6 @@ define(
 			} else {
 				// Hyperbola
 				return Math.sqrt(1 + (Math.pow(this.n, 2) / Math.pow(this.j, 2)));
-			}
-		};
-
-		Conic.prototype.translateTo = function (v) {
-			if (v && v instanceof Vector) {
-				this.coords = v;
-			}
-		};
-
-		Conic.prototype.translate = function (v) {
-			if (v && v instanceof Vector) {
-				this.translateTo(this.coords.add(v));
-			}
-		};
-
-		Conic.prototype.translateFocusTo = function (v) {
-			// Treat the first focus as the "main" one
-
-			// Move the main focus to the passed position
-
-			var d;
-
-			if (v && v instanceof Vector) {
-				d = v.subtract(this.foci[0]);
-				this.translate(d);
 			}
 		};
 
@@ -131,17 +91,16 @@ define(
 				r = this.j * (e * Math.cosh(E) - 1);
 			}
 
-			v = new Vector(r, 0).rotate(f + this.angle);
+			v = new Vector(r, 0).rotate(f);
 
 			return v;
 		};
 
-		Conic.prototype.getTangentAtEccentricAnomaly = function (E) {
+		Conic.prototype.getGradientAtEccentricAnomaly = function (E) {
 			// Return a unit vector that is tangent to the conic at a
 			// given eccentric anomaly
 
 			var point,
-				tangent,
 				tangentSlope;
 
 
@@ -149,10 +108,7 @@ define(
 			point = this.getPointAtEccentricAnomaly(E);
 
 			// Convert to relative to centre
-			point = point.add(this.foci[0]).subtract(this.coords);
-
-			// Convert to angle of conic instead of global rotation
-			point = point.rotate(-this.angle);
+			point = point.add(this.foci[0]);
 
 			if (Math.sin(E) === 0) {
 				// At apsis, so velocity parallel with semiminor axis
@@ -161,32 +117,13 @@ define(
 				if (this.j > 0) {
 					// Ellipse
 					tangentSlope = -(Math.pow(this.n, 2)*point.x)/(Math.pow(this.j, 2)*point.y);
-					tangent = new Vector(1, tangentSlope);
 				} else {
 					// Hyperbola
 					tangentSlope = (Math.pow(this.n, 2)*point.x)/(Math.pow(this.j, 2)*point.y);
-					tangent = new Vector(1, tangentSlope);
 				}
 			}
 
-			// Correct the tangent's direction if necessary
-			var leavingPeriapsis;
-			if (this.j > 0) {
-				// Ellipse
-				leavingPeriapsis = Math.sin(E) > 0;
-			} else {
-				// Hyperbola
-				leavingPeriapsis = E > 0;
-			}
-
-			if (leavingPeriapsis) {
-				// Moving away from periapsis
-				tangent = tangent.scale(-1);
-			}
-
-			tangent = tangent.normalise().rotate(this.angle);
-
-			return tangent;
+			return tangentSlope;
 		};
 
 		Conic.prototype.eccentricAnomaly = function (f) {
@@ -219,8 +156,6 @@ define(
 
 				ctx.strokeStyle = strokeStyle || '#ffffff';
 
-				ctx.translate(this.coords.x, this.coords.y);
-				ctx.rotate(this.angle);
 				ctx.beginPath();
 				ctx.ellipse(0, 0, this.j, this.n, 0, 0, Math.PI*2);
 				ctx.stroke();
@@ -232,9 +167,6 @@ define(
 				ctx.save();
 
 				ctx.strokeStyle = strokeStyle || '#ffffff';
-
-				ctx.translate(this.coords.x, this.coords.y);
-				ctx.rotate(this.angle);
 
 				var segmentsPerSide = 1000;
 				var segmentLength = 1;
@@ -283,6 +215,7 @@ define(
 
 			// Debug
 			this.drawCentre(ctx, strokeStyle);
+			// this.drawFoci(ctx, strokeStyle);
 		};
 
 		Conic.prototype.drawFoci = function (ctx, fillStyle) {
@@ -309,7 +242,7 @@ define(
 			ctx.fillStyle = fillStyle || '#ffffff';
 
 			ctx.beginPath();
-			ctx.arc(this.coords.x, this.coords.y, 5, 0, Math.PI*2);
+			ctx.arc(0, 0, 5, 0, Math.PI*2);
 			ctx.fill();
 
 			ctx.restore();
