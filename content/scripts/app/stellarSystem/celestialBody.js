@@ -295,7 +295,11 @@ define(
 				}
 
 				// Calculate time since periapsis
+
+				// Mean sweep
 				n = Math.sqrt(u / Math.abs(Math.pow(a, 3)));
+
+				// Time since periapsis
 				t = M / n;
 
 				// Set new orbit
@@ -484,7 +488,6 @@ define(
 				var r = this.sphereOfInfluenceRadius();
 				ctx.save();
 
-				var coords = this.getGlobalPosition();
 				ctx.translate(coords.x, coords.y);
 				ctx.beginPath();
 				ctx.strokeStyle = 'rgba(' + this.r + ', ' + this.g + ', ' + this.b + ', 1)';

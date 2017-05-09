@@ -4,10 +4,15 @@ define(
 
 		'stellarSystem/stellarSystem',
 		'stellarSystem/attractor',
-		'stellarSystem/orbiter'
+		'stellarSystem/orbiter',
+
+		'vector/vector',
+
+		'units/units',
+		'units/convert'
 	],
 
-	function (start, StellarSystem, Attractor, Orbiter) {
+	function (start, StellarSystem, Attractor, Orbiter, Vector, Units, convert) {
 		var ctx = {};
 
 		// For debugging purposes
@@ -64,10 +69,33 @@ define(
 
 				system = new StellarSystem(sun);
 
+				var planet = new Attractor({
+					name: 'Earth',
+					x: 200,
+					y: 0,
+
+					vx: 0,
+					vy: 60,
+
+					attractor: sun,
+
+					size: 5,
+					mass: 5,
+
+					r: 100, g: 200, b: 100
+				});
+
+				system.addCelestialBody(planet);
+
 				var spaceship = new Orbiter({
 					name: 'Spaceship',
-					x: 0,
-					y: -50,
+					x: 100,
+					y: 0,
+
+					vx: 0,
+					vy: 77,
+
+					attractor: sun,
 
 					size: 2,
 					mass: 0.1,
@@ -76,6 +104,17 @@ define(
 				});
 
 				system.addCelestialBody(spaceship);
+
+				followObject = sun;
+
+				document.getElementById('increase-speed').addEventListener('click', function () {
+					spaceship.v = spaceship.v.add(spaceship.v.normalise());
+					spaceship.recalculateOrbit();
+				});
+
+				document.getElementById('decrease-speed').addEventListener('click', function () {
+					spaceship.v = spaceship.v.subtract(spaceship.v.normalise());
+					spaceship.recalculateOrbit();});
 			},
 
 			_doStep: function (dt) {
@@ -124,12 +163,12 @@ define(
 					followCoords = followObject.getGlobalPosition();
 
 					ctx.celestialBodies.translate(
-						ctx.celestialBodies.canvas.width/2-followCoords.x,
-						ctx.celestialBodies.canvas.height/2-followCoords.y
+						ctx.celestialBodies.canvas.width/2-followCoords.x*scale,
+						ctx.celestialBodies.canvas.height/2-followCoords.y*scale
 					);
 					ctx.orbits.translate(
-						ctx.orbits.canvas.width/2-followCoords.x,
-						ctx.orbits.canvas.height/2-followCoords.y
+						ctx.orbits.canvas.width/2-followCoords.x*scale,
+						ctx.orbits.canvas.height/2-followCoords.y*scale
 					);
 				}
 

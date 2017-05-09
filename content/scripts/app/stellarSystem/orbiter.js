@@ -11,6 +11,10 @@ define(
 		Orbiter.prototype = Object.create(CelestialBody.prototype);
 		Orbiter.prototype.constructor = CelestialBody;
 
+		Orbiter.prototype.sphereOfInfluenceRadius = function () {
+			return 0;
+		};
+
 		return Orbiter;
 	}
 );
