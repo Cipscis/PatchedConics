@@ -9,11 +9,15 @@ define(
 		var defaults = {
 			name: 'New celestial body',
 
+			// Converted to coords (Vector)
 			x: 100,
 			y: 0,
+
+			// Converted to v (Vector)
 			vx: 0,
 			vy: 0,
 
+			// Colour
 			r: 100,
 			g: 100,
 			b: 100,
@@ -21,6 +25,7 @@ define(
 			size: 50,
 			mass: 50,
 
+			// Used to create initial orbit
 			attractor: undefined
 		};
 
@@ -339,7 +344,7 @@ define(
 					i;
 
 				// Eccentricity of orbit
-				e = this.orbit.eccentricity();
+				e = this.orbit.e;
 
 				// Standard gravitational parameter
 				u = config.G * this.orbit.attractor.mass;

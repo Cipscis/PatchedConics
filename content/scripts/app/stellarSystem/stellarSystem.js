@@ -16,77 +16,96 @@ define(
 				r: 200, g: 200, b: 100
 			});
 
-			this.celestialBodies = [sun];
+			this.attractors = [sun];
+			this.orbiters = [];
 		};
 
 		StellarSystem.prototype.addCelestialBody = function (celestialBody) {
-			this.celestialBodies.push(celestialBody);
+			if (celestialBody instanceof Attractor) {
+				this.attractors.push(celestialBody);
+			} else if (celestialBody instanceof Orbiter) {
+				this.orbiters.push(celestialBody);
+			} else {
+				console.error('Neither an attractor nor an orbiter', celestialBody);
+			}
 
 			if (!(celestialBody.orbit && celestialBody.orbit.attractor)) {
-				celestialBody.setInitialOrbit(this.celestialBodies[0]);
+				celestialBody.setInitialOrbit(this.attractors[0]);
 			}
 		};
 
 		StellarSystem.prototype.update = function (dt) {
-			var i, body,
-				j, planet,
+			var i, orbiter,
+				j, attractor,
 				r, d,
-				minD, closestPlanet,
-				newParent;
+				minD, closestAttractor,
+				newAttractor;
 
-			for (i = 0; i < this.celestialBodies.length; i++) {
-				this.celestialBodies[i].update(dt);
+			// Do update step for all attractors
+			for (i = 0; i < this.attractors.length; i++) {
+				this.attractors[i].update(dt);
 			}
 
-			for (i = 0; i < this.celestialBodies.length; i++) {
-				body = this.celestialBodies[i];
+			// Do update step for all orbiters
+			for (i = 0; i < this.orbiters.length; i++) {
+				this.orbiters[i].update(dt);
+			}
 
-				if (body instanceof Attractor) {
-					// Only worry about objects with negligible mass
-					continue;
-				}
+			// Evaluate interaction between attractors and orbiters
+			// TODO: At high speeds, interaction during the time step can
+			// result in inaccuracies. Could interpolate to find when the
+			// interaction should have happened and recalculate new orbit
+			for (i = 0; i < this.orbiters.length; i++) {
+				orbiter = this.orbiters[i];
 
 				// Re-evaluate the current sphere of influence
-				// for all massless bodies. Assume no spheres of influence
+				// for all orbiters. Assume no spheres of influence
 				// of objects with non-negligible mass overlap
+
 				minD = null;
-				closestPlanet = null;
-				for (j = 1; j < this.celestialBodies.length; j++) {
+				closestAttractor = null;
+				for (j = 1; j < this.attractors.length; j++) {
 					// j = 1 to skip sun
-					planet = this.celestialBodies[j];
+					attractor = this.attractors[j];
 
-					if (planet instanceof Orbiter) {
-						// Only worry about objects with non-negligible mass
-						continue;
-					}
-
-					r = planet.sphereOfInfluenceRadius();
-					d = body.getLocalPosition(planet).mod();
+					r = attractor.sphereOfInfluenceRadius();
+					d = orbiter.getLocalPosition(attractor).mod();
 
 					if (d < r) {
 						if (minD === null || d < minD) {
 							minD = d;
-							closestPlanet = planet;
+							closestAttractor = attractor;
 						}
 					}
 				}
-				newParent = closestPlanet;
+				newAttractor = closestAttractor;
 
-				if (!newParent) {
-					newParent = this.celestialBodies[0]; // Sun
+				if (!newAttractor) {
+					newAttractor = this.attractors[0]; // Sun
 				}
 
-				if (newParent !== body.orbit.attractor) {
-					body.recalculateOrbit(newParent);
+				if (newAttractor !== orbiter.orbit.attractor) {
+					orbiter.recalculateOrbit(newAttractor);
 				}
 			}
 		};
 
 		StellarSystem.prototype.draw = function (ctxBodies, ctxOrbits) {
-			for (i = 0; i < this.celestialBodies.length; i++) {
-				this.celestialBodies[i].draw(ctxBodies);
+			var i;
+
+			// Draw attractors
+			for (i = 0; i < this.attractors.length; i++) {
+				this.attractors[i].draw(ctxBodies);
 				if (window.debug) {
-					this.celestialBodies[i].drawOrbit(ctxOrbits);
+					this.attractors[i].drawOrbit(ctxOrbits);
+				}
+			}
+
+			// Draw orbiters
+			for (i = 0; i < this.orbiters.length; i++) {
+				this.orbiters[i].draw(ctxBodies);
+				if (window.debug) {
+					this.orbiters[i].drawOrbit(ctxOrbits);
 				}
 			}
 		};

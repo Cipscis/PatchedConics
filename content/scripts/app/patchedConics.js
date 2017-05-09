@@ -12,15 +12,19 @@ define(
 
 		// For debugging purposes
 		window.debug = true;
-		window.debugCB = null;
 
 		var system;
+		var followObject;
 
 		var benchmarking = 0.99;
 
 		var Game = {
 			init: function () {
 				Game._initCtx();
+
+				Game._initSystem();
+
+				// Test cases:
 				// Game._initEllipseTest(1);
 				// Game._initHyperbolicTest(1);
 
@@ -29,7 +33,7 @@ define(
 				// Game._initHyperbolicSimpleTransferTest(1);
 				// Game._initHyperbolicSimpleTransferTest(0.9);
 
-				Game._initHyperbolicComplexTransferTest(1);
+				// Game._initHyperbolicComplexTransferTest(1);
 
 				start(Game._doStep, 100, 0.5);
 			},
@@ -44,6 +48,101 @@ define(
 				ctx.celestialBodies = canvas.celestialBodies.getContext('2d');
 			},
 
+			_initSystem: function () {
+				var sun = new Attractor({
+					name: 'Sun',
+					x: 600,
+					y: 300,
+					vx: 0,
+					vy: 0,
+
+					size: 15,
+					mass: 600,
+
+					r: 200, g: 200, b: 100
+				});
+
+				system = new StellarSystem(sun);
+
+				var spaceship = new Orbiter({
+					name: 'Spaceship',
+					x: 0,
+					y: -50,
+
+					size: 2,
+					mass: 0.1,
+
+					r: 200, g: 200, b: 200
+				});
+
+				system.addCelestialBody(spaceship);
+			},
+
+			_doStep: function (dt) {
+				Game._update(dt);
+				Game._render();
+
+				benchmarking += dt;
+				if (benchmarking >= 1) {
+					benchmarking = 0;
+					document.getElementById('fps').innerHTML = Math.round(1/dt);
+				}
+			},
+
+			_update: function (dt) {
+				var numSteps = 1, i,
+					timeScale = 1;
+
+				for (i = 0; i < numSteps; i++) {
+					system.update(dt*timeScale/numSteps);
+				}
+			},
+
+			_render: function () {
+				Game._clear();
+				Game._draw();
+			},
+
+			_clearCtx: function (ctx) {
+				ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+				ctx.beginPath();
+			},
+
+			_clear: function () {
+				Game._clearCtx(ctx.celestialBodies);
+				Game._clearCtx(ctx.orbits);
+			},
+
+			_draw: function () {
+				ctx.celestialBodies.save();
+				ctx.orbits.save();
+
+				var scale = 1,
+					followCoords;
+
+				if (followObject) {
+					followCoords = followObject.getGlobalPosition();
+
+					ctx.celestialBodies.translate(
+						ctx.celestialBodies.canvas.width/2-followCoords.x,
+						ctx.celestialBodies.canvas.height/2-followCoords.y
+					);
+					ctx.orbits.translate(
+						ctx.orbits.canvas.width/2-followCoords.x,
+						ctx.orbits.canvas.height/2-followCoords.y
+					);
+				}
+
+				ctx.celestialBodies.scale(scale, scale);
+				ctx.orbits.scale(scale, scale);
+
+				system.draw(ctx.celestialBodies, ctx.orbits);
+
+				ctx.celestialBodies.restore();
+				ctx.orbits.restore();
+			},
+
+			// TESTS CASES //
 			_initEllipseTest: function (scale) {
 				scale = scale || 1;
 
@@ -95,8 +194,6 @@ define(
 				});
 
 				system.addCelestialBody(planet2);
-
-				window.debugCB = planet2;
 			},
 
 			_initEllipseSimpleTransferTest: function (scale) {
@@ -167,8 +264,6 @@ define(
 				});
 
 				system.addCelestialBody(spaceship);
-
-				window.debugCB = spaceship;
 			},
 
 			_initHyperbolicTest: function (scale) {
@@ -222,8 +317,6 @@ define(
 				});
 
 				system.addCelestialBody(planet2);
-
-				window.debugCB = planet2;
 			},
 
 			_initHyperbolicSimpleTransferTest: function (scale) {
@@ -294,8 +387,6 @@ define(
 				});
 
 				system.addCelestialBody(spaceship2);
-
-				window.debugCB = spaceship2;
 			},
 
 			_initHyperbolicComplexTransferTest: function (scale) {
@@ -383,59 +474,6 @@ define(
 				});
 
 				system.addCelestialBody(spaceshipT);
-
-				window.debugCB = spaceshipT;
-			},
-
-			_doStep: function (dt) {
-				Game._clear(); // Moved here from _render for debugging purposes involving drawing in the _update step
-				Game._update(dt);
-				Game._render();
-
-				benchmarking += dt;
-				if (benchmarking >= 1) {
-					benchmarking = 0;
-					document.getElementById('fps').innerHTML = Math.round(1/dt);
-				}
-			},
-
-			_update: function (dt) {
-				var numSteps = 1, i,
-					timeScale = 1;
-
-				for (i = 0; i < numSteps; i++) {
-					system.update(dt*timeScale/numSteps);
-				}
-			},
-
-			_render: function () {
-				// Game._clear();
-				Game._draw();
-			},
-
-			_clearCtx: function (ctx) {
-				ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-				ctx.beginPath();
-			},
-
-			_clear: function () {
-				Game._clearCtx(ctx.celestialBodies);
-				Game._clearCtx(ctx.orbits);
-			},
-
-			_draw: function () {
-				ctx.celestialBodies.save();
-				ctx.orbits.save();
-
-				var scale = 1;
-
-				ctx.celestialBodies.scale(scale, scale);
-				ctx.orbits.scale(scale, scale);
-
-				system.draw(ctx.celestialBodies, ctx.orbits);
-
-				ctx.celestialBodies.restore();
-				ctx.orbits.restore();
 			}
 		};
 

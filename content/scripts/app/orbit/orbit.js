@@ -8,15 +8,18 @@ define(
 	function (Conic, Vector) {
 		// An orbit contains all the information necessary to determine an object's position
 		// in orbit. This includes the shape and angle of the orbit, as well as its direction,
-		// the orbiter, and the body being orbited (the attractor).
+		// the orbiter, and the attractor (the body being orbited)
 
-		// It acts as an interface for the various methods of conics, placing them in the
-		// appropriate coordinate system for the orbit
+		// It acts as an interface for the various methods belonging to Conics, converting the
+		// values they return into the appropriate coordinate system for the orbit
 
 		var defaults = {
 			angle: 0,
 			anticlockwise: false,
 			t: 0,
+
+			orbiter: undefined,
+			attractor: undefined,
 
 			// Conic properties
 			a: 10,
@@ -39,7 +42,7 @@ define(
 			this.attractor = options.attractor;
 			this.orbiter = options.orbiter;
 
-			if (this.a > 0 && this.b > this.a) {
+			if (this.a > 0 && (this.b > this.a)) {
 				// Ellipse, but semiminor axis larger than semimajor axis
 				// Swap axes and rotate by pi/2 to compensate
 
@@ -50,6 +53,7 @@ define(
 			}
 
 			this.shape = new Conic(this.a, this.b);
+			this.e = this.shape.e;
 
 			if (!this.attractor) {
 				console.error('No attractor specified for orbit');
@@ -92,38 +96,38 @@ define(
 
 		// CONIC INTERFACE //
 		Object.defineProperty(Orbit.prototype, 'foci', {
-			get: function () {
-				var shapeFoci = this.shape.foci;
+			// A getter because this.coords can change, affecting this.foci
 
+			get: function () {
 				foci = [
-					this.coords.add(shapeFoci[0].rotate(this.angle)),
-					this.coords.add(shapeFoci[1].rotate(this.angle))
+					this.coords.add(this.shape.foci[0].rotate(this.angle)),
+					this.coords.add(this.shape.foci[1].rotate(this.angle))
 				];
 
 				return foci;
 			}
 		});
 
-		Orbit.prototype.eccentricity = function () {
-			return this.shape.eccentricity();
-		};
-
 		Orbit.prototype.getPointAtEccentricAnomaly = function (E) {
 			var point = this.shape.getPointAtEccentricAnomaly(E);
 
+			// Convert to orbit's coordinate system
 			point = point.rotate(this.angle);
 
 			return point;
 		};
 
 		Orbit.prototype.getTangentAtEccentricAnomaly = function (E) {
+			// Get gradient from conic, then determine correct direction and
+			// return normalised vector to represent it
+
 			var gradient,
 				leavingPeriapsis,
 				tangent;
 
 			gradient = this.shape.getGradientAtEccentricAnomaly(E);
 
-			if (this.eccentricity() < 1) {
+			if (this.e < 1) {
 				// Ellipse
 				leavingPeriapsis = Math.sin(E) > 0;
 			} else {
@@ -137,7 +141,10 @@ define(
 				tangent = new Vector(1, gradient);
 			}
 
-			tangent = tangent.normalise().rotate(this.angle);
+			tangent = tangent.normalise();
+
+			// Convert to orbit's coordinate system
+			tangent = tangent.rotate(this.angle);
 
 			return tangent;
 		};
