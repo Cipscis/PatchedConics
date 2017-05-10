@@ -88,6 +88,10 @@ define(
 					orbiter.recalculateOrbit(newAttractor);
 				}
 			}
+
+			if (window.debugPathCB) {
+				this.path = this.predictPath(debugPathCB, 60);
+			}
 		};
 
 		StellarSystem.prototype.draw = function (ctxBodies, ctxOrbits) {
@@ -108,6 +112,60 @@ define(
 					this.orbiters[i].drawOrbit(ctxOrbits);
 				}
 			}
+
+			// Debug: Draw path
+			if (this.path && this.path.length) {
+				ctxOrbits.save();
+
+				ctxOrbits.beginPath();
+				ctxOrbits.moveTo(this.path[0].x, this.path[0].y);
+				for (var i = 1; i < this.path.length; i++) {
+					ctxOrbits.lineTo(this.path[i].x, this.path[i].y);
+				}
+				ctxOrbits.strokeStyle = '#ff0000';
+				ctxOrbits.stroke();
+
+				ctxOrbits.restore();
+			}
+		};
+
+		StellarSystem.prototype.predictPath = function (cb, time, relativeTo) {
+			// Predicts the path of CelestialBody cb
+			// relative to Attractor relativeTo, for
+			// passed time, and returns an array of
+			// coordinates that can be drawn
+
+			var params, coords,
+				path = [],
+
+				times = [],
+				timeSteps = 360,
+
+				i, j;
+
+			// TODO: In order to be relative to a moving body, you will also need
+			// to predict the path of relativeTo and all of its parents
+
+			// Create time steps
+			for (i = 0; i < timeSteps; i++) {
+				times.push(i * time / timeSteps);
+			}
+
+			// Predict future path
+			for (i = 0; i < times.length; i++) {
+				time = times[i];
+
+				params = cb.progressOrbit(time);
+				coords = params.coords;
+
+				// TODO: Check if the orbit will have changed
+
+				// TODO: Convert to be relative to relativeTo
+
+				path.push(params.coords);
+			}
+
+			return path;
 		};
 
 		return StellarSystem;

@@ -35,7 +35,7 @@ define(
 			G: 1000,
 
 			// Number of iterations for calculating mean anomaly
-			iterM: 1000
+			iterM: 250
 		};
 
 		var CelestialBody = function (options) {
@@ -389,7 +389,9 @@ define(
 			}
 		};
 
-		CelestialBody.prototype.orbitalVelocity = function (E) {
+		CelestialBody.prototype.orbitalVelocity = function (E, coords) {
+			coords = coords || this.coords;
+
 			if (this.orbit) {
 				var u,
 					r,
@@ -438,32 +440,54 @@ define(
 		//////////////////
 		// PHYSICS STEP //
 		//////////////////
-		CelestialBody.prototype.update = function (dt) {
+		CelestialBody.prototype.progressOrbit = function (dt) {
 			// Calculates the body's location along its orbit
 			// based on its previous location and the time that
-			// has passed
+			// has passed since the current time
+
+			var t, E,
+				params = {
+					coords: this.coords,
+					velocity: this.v
+				};
 
 			if (this.orbit) {
 				// Time is how the position is calculated
 				// Past position is discarded each time, and
 				// instantaneous velocity is only recorded for
 				// recalculating an orbit when changing orbits
+
+				t = this.orbit.t + dt;
+
+				E = this.eccentricAnomaly(t);
+
+				coords = this.orbit.getPointAtEccentricAnomaly(E);
+
+				velocity = this.orbitalVelocity(E, coords);
+
+				params = {
+					coords: coords,
+					velocity: velocity
+				};
+			}
+
+			return params;
+		};
+
+		CelestialBody.prototype.update = function (dt) {
+			// Calculates the body's location along its orbit
+			// based on its previous location and the time that
+			// has passed in the physics update
+
+			var params;
+
+			if (this.orbit) {
+				params = this.progressOrbit(dt);
+
 				this.orbit.t += dt;
 
-				var E, B,
-					v;
-
-				// Eccentric anomaly depends on time only
-				E = this.eccentricAnomaly();
-
-				// New coords depends on eccentric anomaly
-				B = this.orbit.getPointAtEccentricAnomaly(E);
-
-				// New velocity depends on position and uses eccentric anomaly
-				this.coords = B;
-				v = this.orbitalVelocity(E);
-
-				this.v = v;
+				this.coords = params.coords;
+				this.v = params.velocity;
 			}
 		};
 

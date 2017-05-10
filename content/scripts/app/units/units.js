@@ -1,16 +1,21 @@
 define(
-	[],
+	[
+		'units/convert'
+	],
 
-	function () {
+	function (convert) {
 		var Units = {};
 
 		// DISTANCE //
 		Units.distance = {};
 
-		// Based on the astronomical unit
-		Units.distance.AU = 1;
+		// Use px as 1 to make drawing easier
+		Units.distance.px = 1;
 
-		Units.distance.m = 1 / 149600000000;
+		// Set 1 AU to 100 px at default scale
+		Units.distance.AU = 1 / 200;
+
+		Units.distance.m = Units.distance.AU * 149600000000;
 		Units.distance.metre = Units.distance.m;
 		Units.distance.metres = Units.distance.m;
 
@@ -18,8 +23,8 @@ define(
 		Units.distance.kilometre = Units.distance.km;
 		Units.distance.kilometres = Units.distance.km;
 
-		// This will apply at default zoom level
-		Units.distance.px = 100;
+		Units.distance.solRadius = Units.distance.km / 695700;
+		Units.distance.earthRadius = Units.distance.km / 6371;
 
 
 		// MASS //
@@ -28,6 +33,9 @@ define(
 		// Based on solar mass
 		Units.mass.sol = 1;
 		Units.mass.sols = 1;
+
+		Units.mass.earth = 1 / 0.000003003;
+		Units.mass.earths = Units.mass.earth;
 
 		Units.mass.kg = 1.988435 * Math.pow(10, 30);
 		Units.mass.kilograms = Units.mass.kg;

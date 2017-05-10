@@ -16,10 +16,12 @@ define(
 		var ctx = {};
 
 		// For debugging purposes
-		window.debug = true;
+		// window.debug = true;
+		window.debugPathCB = null;
 
 		var system;
 		var followObject;
+		var path;
 
 		var benchmarking = 0.99;
 
@@ -56,8 +58,8 @@ define(
 			_initSystem: function () {
 				var sun = new Attractor({
 					name: 'Sun',
-					x: 600,
-					y: 300,
+					x: 0,
+					y: 0,
 					vx: 0,
 					vy: 0,
 
@@ -70,7 +72,7 @@ define(
 				system = new StellarSystem(sun);
 
 				var planet = new Attractor({
-					name: 'Earth',
+					name: 'Planet',
 					x: 200,
 					y: 0,
 
@@ -80,12 +82,30 @@ define(
 					attractor: sun,
 
 					size: 5,
-					mass: 5,
+					mass: 15,
 
 					r: 100, g: 200, b: 100
 				});
 
 				system.addCelestialBody(planet);
+
+				var moon = new Attractor({
+					name: 'Moon',
+					x: 20,
+					y: 0,
+
+					vx: 0,
+					vy: 30,
+
+					attractor: planet,
+
+					size: 2,
+					mass: 5,
+
+					r: 100, g: 100, b: 100
+				});
+
+				system.addCelestialBody(moon);
 
 				var spaceship = new Orbiter({
 					name: 'Spaceship',
@@ -114,7 +134,10 @@ define(
 
 				document.getElementById('decrease-speed').addEventListener('click', function () {
 					spaceship.v = spaceship.v.subtract(spaceship.v.normalise());
-					spaceship.recalculateOrbit();});
+					spaceship.recalculateOrbit();
+				});
+
+				window.debugPathCB = planet;
 			},
 
 			_doStep: function (dt) {
@@ -159,21 +182,30 @@ define(
 				var scale = 1,
 					followCoords;
 
+				ctx.celestialBodies.translate(
+					ctx.celestialBodies.canvas.width/2,
+					ctx.celestialBodies.canvas.height/2
+				);
+				ctx.orbits.translate(
+					ctx.orbits.canvas.width/2,
+					ctx.orbits.canvas.height/2
+				);
+
+				ctx.celestialBodies.scale(scale, scale);
+				ctx.orbits.scale(scale, scale);
+
 				if (followObject) {
 					followCoords = followObject.getGlobalPosition();
 
 					ctx.celestialBodies.translate(
-						ctx.celestialBodies.canvas.width/2-followCoords.x*scale,
-						ctx.celestialBodies.canvas.height/2-followCoords.y*scale
+						-followCoords.x,
+						-followCoords.y
 					);
 					ctx.orbits.translate(
-						ctx.orbits.canvas.width/2-followCoords.x*scale,
-						ctx.orbits.canvas.height/2-followCoords.y*scale
+						-followCoords.x,
+						-followCoords.y
 					);
 				}
-
-				ctx.celestialBodies.scale(scale, scale);
-				ctx.orbits.scale(scale, scale);
 
 				system.draw(ctx.celestialBodies, ctx.orbits);
 
