@@ -65,7 +65,7 @@ define(
 				delete this.attractor;
 
 				if (this.v.x || this.v.y) {
-					this.recalculateOrbit(this.attractor);
+					this.setNewOrbit(this.attractor);
 				} else {
 					this.setInitialOrbit(this.attractor);
 				}
@@ -152,10 +152,25 @@ define(
 				orbiter: this
 			});
 
-			console.warn('Manually setting orbit of ' + this.name);
+			console.info('Manually setting orbit of ' + this.name);
+		};
+
+		CelestialBody.prototype.setNewOrbit = function (parent) {
+			parent = parent || (this.orbit && this.orbit.attractor);
+
+			if (parent) {
+				this.orbit = this.recalculateOrbit(parent);
+
+				// Change coordinate system to be relative to new parent
+				this.coords = this.getLocalPosition(parent);
+			}
 		};
 
 		CelestialBody.prototype.recalculateOrbit = function (parent) {
+			// Calculates and returns this object's orbit around
+			// the passed parent, given the current relative position
+			// and velocity
+
 			// Need to determine three things:
 			// 		The shape of the new orbit
 			// 			Semimajor axis
@@ -251,7 +266,7 @@ define(
 
 				// The sign of the angular momentum Z component determines
 				// the direction of the orbit in the XY plane
-				orbitAnticlockwise = h < 0;
+				newOrbit.anticlockwise = h < 0;
 
 
 				// TIME SINCE PERIAPSIS //
@@ -260,7 +275,7 @@ define(
 				f = coords.getRotation() - w;
 
 				// Eccentric anomaly
-				E = newOrbit.eccentricAnomaly(f);
+				E = newOrbit.eccentricAnomalyAtTrueAnomaly(f);
 
 				// Mean anomaly
 				if (e < 1) {
@@ -275,7 +290,7 @@ define(
 
 				if (e < 1) {
 					// Elliptical orbit
-					if (orbitAnticlockwise) {
+					if (newOrbit.anticlockwise) {
 						M = -M;
 					}
 				} else {
@@ -300,23 +315,13 @@ define(
 				n = Math.sqrt(u / Math.abs(Math.pow(a, 3)));
 
 				// Time since periapsis
-				t = M / n;
+				newOrbit.t = M / n;
 
-				// Set new orbit
-				this.coords = this.getLocalPosition(parent);
-				this.orbit = newOrbit;
-				this.orbit.anticlockwise = orbitAnticlockwise;
-				this.orbit.t = t;
+				return newOrbit;
 			}
 		};
 
 		CelestialBody.prototype.sphereOfInfluenceRadius = function () {
-			// TODO:
-			// This calculation is a fine approximation for very circular
-			// orbits, but for more elliptical ones it would be good to
-			// implement the more accurate version. Though not sure how
-			// best to check the collision on that?
-
 			if (!this.mass) {
 				return 0;
 			}
@@ -326,9 +331,9 @@ define(
 				// Spheres of influence are only calculated for massive bodies,
 				// and massive bodies should never be on escape trajectories
 
-				// console.warn('Massive body ' + this.name + ' on a hyperbolic orbit');
-				// console.log(this.orbit);
-				// console.trace();
+				console.warn('Massive body ' + this.name + ' on a hyperbolic orbit');
+				console.log(this.orbit);
+				console.trace();
 				return 0;
 			}
 
@@ -337,7 +342,7 @@ define(
 			}
 		};
 
-		CelestialBody.prototype.eccentricAnomaly = function (t) {
+		CelestialBody.prototype.eccentricAnomalyAtTime = function (t) {
 			t = t || this.orbit.t;
 
 			if (this.orbit) {
@@ -459,7 +464,7 @@ define(
 
 				t = this.orbit.t + dt;
 
-				E = this.eccentricAnomaly(t);
+				E = this.eccentricAnomalyAtTime(t);
 
 				coords = this.orbit.getPointAtEccentricAnomaly(E);
 

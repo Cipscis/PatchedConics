@@ -36,9 +36,6 @@ define(
 
 		StellarSystem.prototype.update = function (dt) {
 			var i, orbiter,
-				j, attractor,
-				r, d,
-				minD, closestAttractor,
 				newAttractor;
 
 			// Do update step for all attractors
@@ -62,36 +59,48 @@ define(
 				// for all orbiters. Assume no spheres of influence
 				// of objects with non-negligible mass overlap
 
-				minD = null;
-				closestAttractor = null;
-				for (j = 1; j < this.attractors.length; j++) {
-					// j = 1 to skip sun
-					attractor = this.attractors[j];
-
-					r = attractor.sphereOfInfluenceRadius();
-					d = orbiter.getLocalPosition(attractor).mod();
-
-					if (d < r) {
-						if (minD === null || d < minD) {
-							minD = d;
-							closestAttractor = attractor;
-						}
-					}
-				}
-				newAttractor = closestAttractor;
-
-				if (!newAttractor) {
-					newAttractor = this.attractors[0]; // Sun
-				}
+				newAttractor = this.getAttractor(orbiter);
 
 				if (newAttractor !== orbiter.orbit.attractor) {
-					orbiter.recalculateOrbit(newAttractor);
+					orbiter.setNewOrbit(newAttractor);
 				}
 			}
 
 			if (window.debugPathCB) {
-				this.path = this.predictPath(debugPathCB, 60);
+				this.path = this.predictPath(debugPathCB, 31.5, true);
 			}
+		};
+
+		StellarSystem.prototype.getAttractor = function (orbiter) {
+			// Evaluate interaction between attractors and orbiters
+			// TODO: At high speeds, interaction during the time step can
+			// result in inaccuracies. Could interpolate to find when the
+			// interaction should have happened and recalculate new orbit
+
+			var i, attractor,
+				r, d,
+				minD = null,
+				closestAttractor, newAttractor;
+
+			for (i = 1; i < this.attractors.length; i++) {
+				// i = 1 to skip sun
+				attractor = this.attractors[i];
+
+				r = attractor.sphereOfInfluenceRadius();
+				d = orbiter.getLocalPosition(attractor).mod();
+
+				if (d < r) {
+					if (minD === null || d < minD) {
+						minD = d;
+						closestAttractor = attractor;
+					}
+				}
+			}
+
+			// Sun by default
+			newAttractor = closestAttractor || this.attractors[0];
+
+			return newAttractor;
 		};
 
 		StellarSystem.prototype.draw = function (ctxBodies, ctxOrbits) {
@@ -119,50 +128,64 @@ define(
 
 				ctxOrbits.beginPath();
 				ctxOrbits.moveTo(this.path[0].x, this.path[0].y);
-				for (var i = 1; i < this.path.length; i++) {
+				for (i = 1; i < this.path.length; i++) {
 					ctxOrbits.lineTo(this.path[i].x, this.path[i].y);
 				}
-				ctxOrbits.strokeStyle = '#ff0000';
+				ctxOrbits.strokeStyle = 'rgba(200, 100, 0, 1)';
+				ctxOrbits.lineWidth = 2;
 				ctxOrbits.stroke();
 
 				ctxOrbits.restore();
 			}
 		};
 
-		StellarSystem.prototype.predictPath = function (cb, time, relativeTo) {
-			// Predicts the path of CelestialBody cb
-			// relative to Attractor relativeTo, for
-			// passed time, and returns an array of
-			// coordinates that can be drawn
+		StellarSystem.prototype.predictPath = function (cb, time) {
+			// Predicts the path of CelestialBody cb, for
+			// duration passed as time in seconds, and returns
+			// an array of coordinates relative to the main
+			// body of the system, that can be drawn
 
-			var params, coords,
+			var originalParams,
+				attractorOriginalParams,
+
+				params, coords,
 				path = [],
 
 				times = [],
 				timeSteps = 360,
 
+				attractor,
+
 				i, j;
 
-			// TODO: In order to be relative to a moving body, you will also need
-			// to predict the path of relativeTo and all of its parents
+			// TODO: If cb is an Orbiter, check for orbit changes
 
-			// Create time steps
-			for (i = 0; i < timeSteps; i++) {
-				times.push(i * time / timeSteps);
-			}
+			if (cb.orbit) {
 
-			// Predict future path
-			for (i = 0; i < times.length; i++) {
-				time = times[i];
+				// Create time steps
+				for (i = 0; i < timeSteps; i++) {
+					times.push(i * time / timeSteps);
+				}
 
-				params = cb.progressOrbit(time);
-				coords = params.coords;
+				// Predict future path
+				for (i = 0; i < times.length; i++) {
+					time = times[i];
 
-				// TODO: Check if the orbit will have changed
+					params = cb.progressOrbit(time);
+					coords = params.coords;
 
-				// TODO: Convert to be relative to relativeTo
+					// Transform to global coordinate system
+					attractor = cb;
+					while (attractor.orbit) {
+						attractor = attractor.orbit.attractor;
 
-				path.push(params.coords);
+						params = attractor.progressOrbit(time);
+						coords = coords.add(params.coords);
+					}
+
+					path.push(coords);
+				}
+
 			}
 
 			return path;

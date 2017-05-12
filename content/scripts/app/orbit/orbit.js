@@ -149,8 +149,8 @@ define(
 			return tangent;
 		};
 
-		Orbit.prototype.eccentricAnomaly = function (f) {
-			return this.shape.eccentricAnomaly(f);
+		Orbit.prototype.eccentricAnomalyAtTrueAnomaly = function (f) {
+			return this.shape.eccentricAnomalyAtTrueAnomaly(f);
 		};
 
 		Orbit.prototype.draw = function (ctx, strokeStyle) {

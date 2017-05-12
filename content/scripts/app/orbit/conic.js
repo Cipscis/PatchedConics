@@ -122,7 +122,7 @@ define(
 			return tangentSlope;
 		};
 
-		Conic.prototype.eccentricAnomaly = function (f) {
+		Conic.prototype.eccentricAnomalyAtTrueAnomaly = function (f) {
 			// Calculate the eccentric anomaly from the given true anomaly f
 
 			var E;

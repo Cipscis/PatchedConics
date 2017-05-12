@@ -16,7 +16,7 @@ define(
 		var ctx = {};
 
 		// For debugging purposes
-		// window.debug = true;
+		window.debug = true;
 		window.debugPathCB = null;
 
 		var system;
@@ -95,7 +95,7 @@ define(
 					y: 0,
 
 					vx: 0,
-					vy: 30,
+					vy: -29.8,
 
 					attractor: planet,
 
@@ -109,13 +109,13 @@ define(
 
 				var spaceship = new Orbiter({
 					name: 'Spaceship',
-					x: 100,
+					x: 10,
 					y: 0,
 
 					vx: 0,
-					vy: 77,
+					vy: 27.2,
 
-					attractor: sun,
+					attractor: moon,
 
 					size: 2,
 					mass: 0.1,
@@ -137,7 +137,7 @@ define(
 					spaceship.recalculateOrbit();
 				});
 
-				window.debugPathCB = planet;
+				window.debugPathCB = spaceship;
 			},
 
 			_doStep: function (dt) {
@@ -265,6 +265,8 @@ define(
 				});
 
 				system.addCelestialBody(planet2);
+
+				followObject = sun;
 			},
 
 			_initEllipseSimpleTransferTest: function (scale) {
@@ -335,6 +337,8 @@ define(
 				});
 
 				system.addCelestialBody(spaceship);
+
+				followObject = sun;
 			},
 
 			_initHyperbolicTest: function (scale) {
@@ -388,6 +392,8 @@ define(
 				});
 
 				system.addCelestialBody(planet2);
+
+				followObject = sun;
 			},
 
 			_initHyperbolicSimpleTransferTest: function (scale) {
@@ -458,6 +464,8 @@ define(
 				});
 
 				system.addCelestialBody(spaceship2);
+
+				followObject = sun;
 			},
 
 			_initHyperbolicComplexTransferTest: function (scale) {
@@ -545,6 +553,8 @@ define(
 				});
 
 				system.addCelestialBody(spaceshipT);
+
+				followObject = sun;
 			}
 		};
 
