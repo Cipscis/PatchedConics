@@ -17,6 +17,7 @@ define(
 			angle: 0,
 			anticlockwise: false,
 			t: 0,
+			tPeriapsis: 0,
 
 			orbiter: undefined,
 			attractor: undefined,

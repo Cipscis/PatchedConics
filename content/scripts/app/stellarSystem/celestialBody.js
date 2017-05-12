@@ -156,13 +156,17 @@ define(
 		};
 
 		CelestialBody.prototype.setNewOrbit = function (parent) {
+			var newOrbit;
+
 			parent = parent || (this.orbit && this.orbit.attractor);
 
 			if (parent) {
-				this.orbit = this.recalculateOrbit(parent);
+				newOrbit = this.recalculateOrbit(parent);
 
 				// Change coordinate system to be relative to new parent
 				this.coords = this.getLocalPosition(parent);
+
+				this.orbit = newOrbit;
 			}
 		};
 
@@ -252,7 +256,8 @@ define(
 					angle: w,
 
 					attractor: parent,
-					orbiter: this
+					orbiter: this,
+					t: t
 				});
 
 
@@ -315,7 +320,7 @@ define(
 				n = Math.sqrt(u / Math.abs(Math.pow(a, 3)));
 
 				// Time since periapsis
-				newOrbit.t = M / n;
+				newOrbit.tPeriapsis = -(M / n) + newOrbit.t;
 
 				return newOrbit;
 			}
@@ -445,12 +450,11 @@ define(
 		//////////////////
 		// PHYSICS STEP //
 		//////////////////
-		CelestialBody.prototype.progressOrbit = function (dt) {
-			// Calculates the body's location along its orbit
-			// based on its previous location and the time that
-			// has passed since the current time
+		CelestialBody.prototype.getStateVectorsAtTime = function (t) {
+			// Calculates the body's position and vector along
+			// its current orbit, given an absolute time value
 
-			var t, E,
+			var E,
 				params = {
 					coords: this.coords,
 					velocity: this.v
@@ -462,21 +466,29 @@ define(
 				// instantaneous velocity is only recorded for
 				// recalculating an orbit when changing orbits
 
-				t = this.orbit.t + dt;
-
 				E = this.eccentricAnomalyAtTime(t);
 
-				coords = this.orbit.getPointAtEccentricAnomaly(E);
+				params.coords = this.orbit.getPointAtEccentricAnomaly(E);
 
-				velocity = this.orbitalVelocity(E, coords);
-
-				params = {
-					coords: coords,
-					velocity: velocity
-				};
+				params.velocity = this.orbitalVelocity(E, params.coords);
 			}
 
 			return params;
+		};
+
+		CelestialBody.prototype.progressOrbit = function (dt) {
+			// Calculates the body's location along its orbit
+			// based on its previous location and the time that
+			// has passed since the current time
+
+			if (this.orbit) {
+				return this.getStateVectorsAtTime(this.orbit.t + dt);
+			} else {
+				return {
+					coords: this.coords,
+					velocity: this.v
+				};
+			}
 		};
 
 		CelestialBody.prototype.update = function (dt) {
