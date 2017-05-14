@@ -147,13 +147,14 @@ define(
 			console.info('Manually setting orbit of ' + this.name);
 		};
 
-		CelestialBody.prototype.setNewOrbit = function (parent) {
+		CelestialBody.prototype.setNewOrbit = function (parent, t) {
 			parent = parent || (this.orbit && this.orbit.attractor);
+			t = t || 0;
 
 			var newOrbit;
 
 			if (parent) {
-				newOrbit = this.recalculateOrbit(parent);
+				newOrbit = this.recalculateOrbit(parent, t);
 
 				// Change coordinate system to be relative to new parent
 				this.coords = this.getLocalPosition(parent);
@@ -162,7 +163,7 @@ define(
 			}
 		};
 
-		CelestialBody.prototype.recalculateOrbit = function (parent) {
+		CelestialBody.prototype.recalculateOrbit = function (parent, t) {
 			// Calculates and returns this object's orbit around
 			// the passed parent, given the current relative position
 			// and velocity
@@ -180,6 +181,7 @@ define(
 			// 			Scalar time value
 
 			parent = parent || (this.orbit && this.orbit.attractor);
+			t = t || 0;
 
 			if (parent) {
 				var u,
@@ -192,7 +194,6 @@ define(
 					f, E,
 					n,
 					M,
-					t,
 
 					newOrbit;
 
@@ -311,7 +312,7 @@ define(
 				n = Math.sqrt(u / Math.abs(Math.pow(a, 3)));
 
 				// Time since periapsis
-				newOrbit.t = M / n;
+				newOrbit.t = -(M / n) + t;
 
 				return newOrbit;
 			}
@@ -341,12 +342,12 @@ define(
 		//////////////////
 		// PHYSICS STEP //
 		//////////////////
-		CelestialBody.prototype.progressOrbit = function (dt) {
+		CelestialBody.prototype.progressOrbit = function (t) {
 			// Calculates the body's location along its orbit
 			// based on its previous location and the time that
 			// has passed since the current time
 
-			var t, E,
+			var E,
 				params = {
 					coords: this.coords,
 					velocity: this.v
@@ -357,8 +358,6 @@ define(
 				// Past position is discarded each time, and
 				// instantaneous velocity is only recorded for
 				// recalculating an orbit when changing orbits
-
-				t = this.orbit.t + dt;
 
 				E = this.orbit.eccentricAnomalyAtTime(t);
 
@@ -375,7 +374,7 @@ define(
 			return params;
 		};
 
-		CelestialBody.prototype.update = function (dt) {
+		CelestialBody.prototype.update = function (t) {
 			// Calculates the body's location along its orbit
 			// based on its previous location and the time that
 			// has passed in the physics update
@@ -383,9 +382,7 @@ define(
 			var params;
 
 			if (this.orbit) {
-				params = this.progressOrbit(dt);
-
-				this.orbit.t += dt;
+				params = this.progressOrbit(t);
 
 				this.coords = params.coords;
 				this.v = params.velocity;

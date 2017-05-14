@@ -18,6 +18,8 @@ define(
 
 			this.attractors = [sun];
 			this.orbiters = [];
+
+			this.t = 0;
 		};
 
 		StellarSystem.prototype.addCelestialBody = function (celestialBody) {
@@ -38,14 +40,16 @@ define(
 			var i, orbiter,
 				newAttractor;
 
+			this.t += dt;
+
 			// Do update step for all attractors
 			for (i = 0; i < this.attractors.length; i++) {
-				this.attractors[i].update(dt);
+				this.attractors[i].update(this.t);
 			}
 
 			// Do update step for all orbiters
 			for (i = 0; i < this.orbiters.length; i++) {
-				this.orbiters[i].update(dt);
+				this.orbiters[i].update(this.t);
 			}
 
 			// Evaluate interaction between attractors and orbiters
@@ -62,7 +66,7 @@ define(
 				newAttractor = this.getAttractor(orbiter);
 
 				if (newAttractor !== orbiter.orbit.attractor) {
-					orbiter.setNewOrbit(newAttractor);
+					orbiter.setNewOrbit(newAttractor, this.t);
 				}
 			}
 
@@ -164,7 +168,7 @@ define(
 
 				// Create time steps
 				for (i = 0; i < timeSteps; i++) {
-					times.push(i * time / timeSteps);
+					times.push(this.t + (i * time / timeSteps));
 				}
 
 				// Predict future path

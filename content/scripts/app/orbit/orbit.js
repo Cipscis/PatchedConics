@@ -199,8 +199,6 @@ define(
 		};
 
 		Orbit.prototype.eccentricAnomalyAtTime = function (t) {
-			t = t || this.t;
-
 			if (this) {
 				var e,
 					u,
@@ -218,7 +216,7 @@ define(
 				n = Math.sqrt(u / Math.abs(Math.pow(this.a, 3)));
 
 				// Calculate mean anomaly
-				M = n * t;
+				M = n * (t - this.t);
 
 				if (this.a > 0) {
 					// Ellipse
