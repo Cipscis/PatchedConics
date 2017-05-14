@@ -1,11 +1,12 @@
 define(
 	[
 		'orbit/conic',
+		'orbit/config',
 
 		'vector/vector'
 	],
 
-	function (Conic, Vector) {
+	function (Conic, orbitConfig, Vector) {
 		// An orbit contains all the information necessary to determine an object's position
 		// in orbit. This includes the shape and angle of the orbit, as well as its direction,
 		// the orbiter, and the attractor (the body being orbited)
@@ -149,8 +150,104 @@ define(
 			return tangent;
 		};
 
+		// ORBITAL DETERMINATION //
+		Orbit.prototype.orbitalVelocity = function (E, coords) {
+			coords = coords || this.coords;
+
+			var u,
+				r,
+				speed, velocity,
+				tangent;
+
+			// Need to calculate and combine two components to get velocity:
+			// 		Speed
+			// 		Direction
+
+
+			// SPEED //
+			// Standard gravitational parameter
+			u = orbitConfig.G * this.attractor.mass;
+
+			// Distance from orbiting body
+			r = this.orbiter.coords.mod();
+
+			// Vis-viva equation
+			speed = Math.sqrt(u * (2 / r - 1 / this.a));
+
+			// DIRECTION //
+			tangent = this.getTangentAtEccentricAnomaly(E);
+
+			if (this.a > 0) {
+				// Elliptic
+				if (this.anticlockwise) {
+					speed = -speed;
+				}
+			} else {
+				// Hyperbolic
+				if (!this.anticlockwise) {
+					speed = -speed;
+				}
+			}
+
+			velocity = tangent.scale(speed);
+
+			return velocity;
+		};
+
 		Orbit.prototype.eccentricAnomalyAtTrueAnomaly = function (f) {
 			return this.shape.eccentricAnomalyAtTrueAnomaly(f);
+		};
+
+		Orbit.prototype.eccentricAnomalyAtTime = function (t) {
+			t = t || this.t;
+
+			if (this) {
+				var e,
+					u,
+					n,
+					M, E,
+					i;
+
+				// Eccentricity of orbit
+				e = this.e;
+
+				// Standard gravitational parameter
+				u = orbitConfig.G * this.attractor.mass;
+
+				// Mean motion
+				n = Math.sqrt(u / Math.abs(Math.pow(this.a, 3)));
+
+				// Calculate mean anomaly
+				M = n * t;
+
+				if (this.a > 0) {
+					// Ellipse
+					if (this.anticlockwise) {
+						M = -M;
+					}
+				} else {
+					// Hyperbolic
+					if (!this.anticlockwise) {
+						M = -M;
+					}
+				}
+
+				// Eccentric anomaly
+				// Calculated numerically from M
+				E = M;
+				if (e < 1) {
+					// Elliptical orbit
+					for (i = 0; i < orbitConfig.iterM; i++) {
+						E = M + e * Math.sin(E);
+					}
+				} else {
+					// Hyperbolic orbit
+					for (i = 0; i < orbitConfig.iterM; i++) {
+						E = E + (M - e*Math.sinh(E) + E) / (e * Math.cosh(E) - 1);
+					}
+				}
+				return E;
+			}
 		};
 
 		Orbit.prototype.draw = function (ctx, strokeStyle) {

@@ -113,7 +113,7 @@ define(
 					y: 0,
 
 					vx: 0,
-					vy: 27.2,
+					vy: 22.2,
 
 					attractor: moon,
 

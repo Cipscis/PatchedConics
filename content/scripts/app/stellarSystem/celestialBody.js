@@ -1,11 +1,12 @@
 define(
 	[
 		'orbit/orbit',
+		'orbit/config',
 
 		'vector/vector'
 	],
 
-	function (Orbit, Vector) {
+	function (Orbit, orbitConfig, Vector) {
 		var defaults = {
 			name: 'New celestial body',
 
@@ -27,15 +28,6 @@ define(
 
 			// Used to create initial orbit
 			attractor: undefined
-		};
-
-		var config = {
-			// Gravitational constant
-			// G = 6.67408 * Math.pow(10, -11); // m^3 kg^-1 s^-2
-			G: 1000,
-
-			// Number of iterations for calculating mean anomaly
-			iterM: 250
 		};
 
 		var CelestialBody = function (options) {
@@ -158,11 +150,15 @@ define(
 		CelestialBody.prototype.setNewOrbit = function (parent) {
 			parent = parent || (this.orbit && this.orbit.attractor);
 
+			var newOrbit;
+
 			if (parent) {
-				this.orbit = this.recalculateOrbit(parent);
+				newOrbit = this.recalculateOrbit(parent);
 
 				// Change coordinate system to be relative to new parent
 				this.coords = this.getLocalPosition(parent);
+
+				this.orbit = newOrbit;
 			}
 		};
 
@@ -201,7 +197,7 @@ define(
 					newOrbit;
 
 				// Standard gravitational parameter
-				u = parent.mass * config.G;
+				u = parent.mass * orbitConfig.G;
 
 
 				// Orbital state vectors relative to parent are known:
@@ -342,106 +338,6 @@ define(
 			}
 		};
 
-		CelestialBody.prototype.eccentricAnomalyAtTime = function (t) {
-			t = t || this.orbit.t;
-
-			if (this.orbit) {
-				var e,
-					u,
-					n,
-					M, E,
-					i;
-
-				// Eccentricity of orbit
-				e = this.orbit.e;
-
-				// Standard gravitational parameter
-				u = config.G * this.orbit.attractor.mass;
-
-				// Mean motion
-				n = Math.sqrt(u / Math.abs(Math.pow(this.orbit.a, 3)));
-
-				// Calculate mean anomaly
-				M = n * t;
-
-				if (this.orbit.a > 0) {
-					// Ellipse
-					if (this.orbit.anticlockwise) {
-						M = -M;
-					}
-				} else {
-					// Hyperbolic
-					if (!this.orbit.anticlockwise) {
-						M = -M;
-					}
-				}
-
-				// Eccentric anomaly
-				// Calculated numerically from M
-				E = M;
-				if (e < 1) {
-					// Elliptical orbit
-					for (i = 0; i < config.iterM; i++) {
-						E = M + e * Math.sin(E);
-					}
-				} else {
-					// Hyperbolic orbit
-					for (i = 0; i < config.iterM; i++) {
-						E = E + (M - e*Math.sinh(E) + E) / (e * Math.cosh(E) - 1);
-					}
-				}
-				return E;
-			}
-		};
-
-		CelestialBody.prototype.orbitalVelocity = function (E, coords) {
-			coords = coords || this.coords;
-
-			if (this.orbit) {
-				var u,
-					r,
-					speed, velocity,
-					tangent;
-
-				// Need to calculate and combine two components to get velocity:
-				// 		Speed
-				// 		Direction
-
-
-				// SPEED //
-				// Standard gravitational parameter
-				u = config.G * this.orbit.attractor.mass;
-
-				// Distance from orbiting body
-				r = this.coords.mod();
-
-				// Vis-viva equation
-				speed = Math.sqrt(u * (2 / r - 1 / this.orbit.a));
-
-				// DIRECTION //
-				tangent = this.orbit.getTangentAtEccentricAnomaly(E);
-
-				if (this.orbit.a > 0) {
-					// Elliptic
-					if (this.orbit.anticlockwise) {
-						speed = -speed;
-					}
-				} else {
-					// Hyperbolic
-					if (!this.orbit.anticlockwise) {
-						speed = -speed;
-					}
-				}
-
-				velocity = tangent.scale(speed);
-
-				return velocity;
-			} else {
-				// Not orbiting anything, so no velocity relative to parent
-				return new Vector(0, 0);
-			}
-		};
-
 		//////////////////
 		// PHYSICS STEP //
 		//////////////////
@@ -464,11 +360,11 @@ define(
 
 				t = this.orbit.t + dt;
 
-				E = this.eccentricAnomalyAtTime(t);
+				E = this.orbit.eccentricAnomalyAtTime(t);
 
 				coords = this.orbit.getPointAtEccentricAnomaly(E);
 
-				velocity = this.orbitalVelocity(E, coords);
+				velocity = this.orbit.orbitalVelocity(E, coords);
 
 				params = {
 					coords: coords,
