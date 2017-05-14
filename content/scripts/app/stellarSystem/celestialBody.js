@@ -342,12 +342,13 @@ define(
 		//////////////////
 		// PHYSICS STEP //
 		//////////////////
-		CelestialBody.prototype.progressOrbit = function (t) {
+		CelestialBody.prototype.getOrbitalState = function (t) {
 			// Calculates the body's location along its orbit
 			// based on its previous location and the time that
 			// has passed since the current time
 
 			var E,
+				coords, velocity,
 				params = {
 					coords: this.coords,
 					velocity: this.v
@@ -382,7 +383,7 @@ define(
 			var params;
 
 			if (this.orbit) {
-				params = this.progressOrbit(t);
+				params = this.getOrbitalState(t);
 
 				this.coords = params.coords;
 				this.v = params.velocity;
@@ -407,17 +408,23 @@ define(
 
 			// Debug: Draw sphere of influence
 			if (window.debug && this.orbit) {
-				var r = this.sphereOfInfluenceRadius();
-				ctx.save();
-
-				ctx.translate(coords.x, coords.y);
-				ctx.beginPath();
-				ctx.strokeStyle = 'rgba(' + this.r + ', ' + this.g + ', ' + this.b + ', 1)';
-				ctx.arc(0, 0, r, 0, Math.PI*2);
-				ctx.stroke();
-
-				ctx.restore();
+				this.drawSphereOfInfluence(ctx);
 			}
+		};
+
+		CelestialBody.prototype.drawSphereOfInfluence = function (ctx) {
+			var r = this.sphereOfInfluenceRadius(),
+				coords = this.getGlobalPosition();
+
+			ctx.save();
+
+			ctx.translate(coords.x, coords.y);
+			ctx.beginPath();
+			ctx.strokeStyle = 'rgba(' + this.r + ', ' + this.g + ', ' + this.b + ', 1)';
+			ctx.arc(0, 0, r, 0, Math.PI*2);
+			ctx.stroke();
+
+			ctx.restore();
 		};
 
 		CelestialBody.prototype.drawOrbit = function (ctx) {

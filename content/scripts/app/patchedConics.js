@@ -17,7 +17,6 @@ define(
 
 		// For debugging purposes
 		window.debug = true;
-		window.debugPathCB = null;
 
 		var system;
 		var followObject;
@@ -136,8 +135,6 @@ define(
 					spaceship.v = spaceship.v.subtract(spaceship.v.normalise());
 					spaceship.recalculateOrbit();
 				});
-
-				window.debugPathCB = spaceship;
 			},
 
 			_doStep: function (dt) {

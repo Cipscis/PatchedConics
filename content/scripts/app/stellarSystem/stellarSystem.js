@@ -5,6 +5,11 @@ define(
 	],
 
 	function (Attractor, Orbiter) {
+		var pathConfig = {
+			pathLength: 360,
+			stepSize: 30 / 360
+		};
+
 		var StellarSystem = function (sun) {
 			sun = sun || new Attractor({
 				name: 'Sun',
@@ -17,7 +22,10 @@ define(
 			});
 
 			this.attractors = [sun];
+			this.attractorPaths = [];
+
 			this.orbiters = [];
+			this.orbiterPaths = [];
 
 			this.t = 0;
 		};
@@ -25,10 +33,12 @@ define(
 		StellarSystem.prototype.addCelestialBody = function (celestialBody) {
 			if (celestialBody instanceof Attractor) {
 				this.attractors.push(celestialBody);
+				this.attractorPaths.push(this.predictPath(celestialBody));
 			} else if (celestialBody instanceof Orbiter) {
 				this.orbiters.push(celestialBody);
+				this.orbiterPaths.push(this.predictPath(celestialBody));
 			} else {
-				console.error('Neither an attractor nor an orbiter', celestialBody);
+				console.error('Tried to add an aobject to StellarSystem that is neither an attractor nor an orbiter', celestialBody);
 			}
 
 			if (!(celestialBody.orbit && celestialBody.orbit.attractor)) {
@@ -70,9 +80,7 @@ define(
 				}
 			}
 
-			if (window.debugPathCB) {
-				this.path = this.predictPath(debugPathCB, 31.5, true);
-			}
+			this.updatePaths(dt);
 		};
 
 		StellarSystem.prototype.getAttractor = function (orbiter) {
@@ -115,6 +123,10 @@ define(
 				this.attractors[i].draw(ctxBodies);
 				if (window.debug) {
 					this.attractors[i].drawOrbit(ctxOrbits);
+
+					if (this.attractors[i].orbit) {
+						this.drawPath(this.attractors[i], ctxOrbits);
+					}
 				}
 			}
 
@@ -123,29 +135,121 @@ define(
 				this.orbiters[i].draw(ctxBodies);
 				if (window.debug) {
 					this.orbiters[i].drawOrbit(ctxOrbits);
+					this.drawPath(this.orbiters[i], ctxOrbits);
 				}
-			}
-
-			// Debug: Draw path
-			if (this.path && this.path.length) {
-				ctxOrbits.save();
-
-				ctxOrbits.beginPath();
-				ctxOrbits.moveTo(this.path[0].x, this.path[0].y);
-				for (i = 1; i < this.path.length; i++) {
-					ctxOrbits.lineTo(this.path[i].x, this.path[i].y);
-				}
-				ctxOrbits.strokeStyle = 'rgba(200, 100, 0, 1)';
-				ctxOrbits.lineWidth = 2;
-				ctxOrbits.stroke();
-
-				ctxOrbits.restore();
 			}
 		};
 
-		StellarSystem.prototype.predictPath = function (cb, time) {
+		// PATH PREDICTION //
+
+		StellarSystem.prototype.getPath = function (cb) {
+			var path,
+				findPath;
+
+			findPath = function (body) {
+				return function (obj) {
+					return obj.celestialBody === body;
+				};
+			};
+
+			if (cb instanceof Attractor) {
+				path = this.attractorPaths.filter(findPath(cb));
+			} else if (cb instanceof Orbiter) {
+				path = this.orbiterPaths.filter(findPath(cb));
+			} else {
+				console.error(cb.name + ' is neither an Attractor nor an Orbiter');
+				return;
+			}
+
+			if (path.length === 1) {
+				path = path[0];
+			} else {
+				console.error('Expected to find 1 path for ' + cb.name + ', but found ' + path.length);
+				return;
+			}
+
+			return path;
+		};
+
+		StellarSystem.prototype.getPathAtTime = function (path, time) {
+			var point,
+				findPointAtTime;
+
+			findPointAtTime = function (time) {
+				return function (obj) {
+					return obj.time === time;
+				};
+			};
+
+			point = path.points.filter(findPointAtTime(time));
+
+			if (point.length === 1) {
+				point = point[0];
+			} else {
+				console.warn('Expected to find 1 point for ' + path.celestialBody.name + ' at time ' + time + ', but found ' + point.length);
+				return;
+			}
+
+			return point;
+		};
+
+		StellarSystem.prototype.drawPath = function (cb, ctx) {
+			var path,
+				findPath,
+
+				time, i,
+
+				globalPoints = [],
+				parent,
+				parentPaths = [],
+
+				parentPath, j,
+				parentPoint;
+
+			path = this.getPath(cb);
+
+			// Find parent paths
+			if (cb.orbit) {
+				parent = cb.orbit.attractor;
+				while (parent.orbit) {
+					parentPaths.push(this.getPath(parent));
+					parent = parent.orbit.attractor;
+				}
+			}
+
+			ctx.save();
+			ctx.beginPath();
+
+			ctx.translate(this.attractors[0].coords.x, this.attractors[0].coords.y);
+			for (i = 0; i < path.points.length; i++) {
+				globalPoints.push(path.points[i].coords);
+				time = path.points[i].time;
+
+				// Convert to global coordinates
+				for (j = 0; j < parentPaths.length; j++) {
+					parentPath = parentPaths[j];
+					parentPoint = this.getPathAtTime(parentPath, time);
+
+					globalPoints[i] = globalPoints[i].add(parentPoint.coords);
+				}
+
+				if (i === 0) {
+					ctx.moveTo(globalPoints[i].x, globalPoints[i].y);
+				} else {
+					ctx.lineTo(globalPoints[i].x, globalPoints[i].y);
+				}
+			}
+
+			ctx.strokeStyle = 'rgba(' + path.celestialBody.r + ', ' + path.celestialBody.g + ', ' + path.celestialBody.b + ', 1)';
+			ctx.lineWidth = 2;
+			ctx.stroke();
+
+			ctx.restore();
+		};
+
+		StellarSystem.prototype.predictPath = function (cb) {
 			// Predicts the path of CelestialBody cb, for
-			// duration passed as time in seconds, and returns
+			// stepSize passed as time in seconds, and returns
 			// an array of coordinates relative to the main
 			// body of the system, that can be drawn
 
@@ -153,47 +257,95 @@ define(
 				attractorOriginalParams,
 
 				params, coords,
-				path = [],
+				points = [],
 
+				time,
 				times = [],
-				timeSteps = 360,
 
 				attractor,
 
-				i, j;
+				i, j,
+
+				path;
 
 			// TODO: If cb is an Orbiter, check for orbit changes
 
 			if (cb.orbit) {
 
 				// Create time steps
-				for (i = 0; i < timeSteps; i++) {
-					times.push(this.t + (i * time / timeSteps));
+				for (i = 0; i < pathConfig.pathLength; i++) {
+					times.push(this.t + (i * pathConfig.stepSize));
 				}
 
 				// Predict future path
 				for (i = 0; i < times.length; i++) {
 					time = times[i];
 
-					params = cb.progressOrbit(time);
+					params = cb.getOrbitalState(time);
 					coords = params.coords;
 
-					// Transform to global coordinate system
-					attractor = cb;
-					while (attractor.orbit) {
-						attractor = attractor.orbit.attractor;
-
-						params = attractor.progressOrbit(time);
-						coords = coords.add(params.coords);
-					}
-
-					path.push(coords);
+					points.push({
+						time: time,
+						coords: coords
+					});
 				}
 
 			}
 
+			path = {
+				celestialBody: cb,
+				points: points
+			};
+
 			return path;
 		};
+
+		StellarSystem.prototype.updatePaths = function (dt) {
+			var allPaths,
+				i, path,
+				j, time;
+
+			allPaths = this.orbiterPaths.concat(this.attractorPaths);
+
+			for (i = 0; i < allPaths.length; i++) {
+				path = allPaths[i];
+
+				// Cut off paths earlier than new time
+				for (j = 0; j < path.points.length; j++) {
+					time = path.points[j].time;
+					if (time >= this.t) {
+
+						// Remove all before this
+						path.points = path.points.splice(j-1);
+
+						// Turn first point in path into current position
+						path.points[0].coords = path.celestialBody.coords;
+
+						break;
+					}
+				}
+
+				// Add new points to the end
+				// TODO: Make final point smooth
+				while (path.points.length < pathConfig.pathLength) {
+					// We removed a point, so add a new one to keep
+					// the path the same length
+
+					time = path.points[path.points.length-1].time + pathConfig.stepSize;
+
+					path.points.push({
+						time: time,
+						coords: path.celestialBody.getOrbitalState(time).coords
+					});
+				}
+			}
+		};
+
+		// TODO: Update orbiters' predicted paths when their orbit changes
+
+		// TODO: Allow path prediction to take future orbital changes into account
+		// This will require re-predicting every orbiter's path whenever an attractor
+		// is added to the system
 
 		return StellarSystem;
 	}
