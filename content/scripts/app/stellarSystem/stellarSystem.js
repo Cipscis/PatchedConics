@@ -126,7 +126,7 @@ define(
 					this.attractors[i].drawOrbit(ctxOrbits);
 
 					if (this.attractors[i].orbit) {
-						this.drawPath(this.attractors[i], ctxOrbits);
+						// this.drawPath(this.attractors[i], ctxOrbits);
 					}
 				}
 			}
@@ -136,7 +136,7 @@ define(
 				this.orbiters[i].draw(ctxBodies);
 				if (window.debug) {
 					this.orbiters[i].drawOrbit(ctxOrbits);
-					this.drawPath(this.orbiters[i], ctxOrbits);
+					// this.drawPath(this.orbiters[i], ctxOrbits);
 				}
 			}
 		};

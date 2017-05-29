@@ -19,8 +19,8 @@ define(
 			anticlockwise: false,
 			t: 0,
 
-			orbiter: undefined,
-			attractor: undefined,
+			orbiter: null,
+			attractor: null,
 
 			// Conic properties
 			a: 10,
@@ -62,10 +62,6 @@ define(
 			} else {
 				this.coords = new Vector(0, 0);
 				this.translateFocusTo(this.attractor.getGlobalPosition());
-			}
-			if (!this.orbiter) {
-				console.error('No orbiter specified for orbit');
-				console.trace();
 			}
 		};
 
@@ -247,6 +243,26 @@ define(
 				return E;
 			}
 		};
+
+		Orbit.prototype.pointInside = function (coords) {
+			// Projects a given point onto the orbit, returns the
+			// difference between the point and its projection
+
+			// > 1 means the point is inside
+			// < 1 means the point is outside
+			// 0 means the point lies on the orbit
+
+			var f, E,
+				point;
+
+			f = coords.getRotation() - this.angle;
+			E = this.eccentricAnomalyAtTrueAnomaly(f);
+			point = this.getPointAtEccentricAnomaly(E);
+
+			return point.mod() - coords.mod();
+		};
+
+		// RENDERING //
 
 		Orbit.prototype.draw = function (ctx, strokeStyle) {
 			ctx.save();

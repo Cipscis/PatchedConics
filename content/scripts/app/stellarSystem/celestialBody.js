@@ -339,6 +339,25 @@ define(
 			}
 		};
 
+		//////////////////////////
+		// CIRCULARISING ORBITS //
+		//////////////////////////
+		CelestialBody.prototype.getCircularOrbitVelocity = function (coords, anticlockwise) {
+			var r,
+				speed,
+				velocity;
+
+			r = coords.mod();
+			speed = Math.sqrt(orbitConfig.G * this.mass / r);
+			if (anticlockwise) {
+				speed = -speed;
+			}
+
+			velocity = coords.normalise().scale(speed).rotate(Math.PI/2);
+
+			return velocity;
+		};
+
 		//////////////////
 		// PHYSICS STEP //
 		//////////////////

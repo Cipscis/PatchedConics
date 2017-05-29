@@ -55,85 +55,77 @@ define(
 			},
 
 			_initSystem: function () {
-				var sun = new Attractor({
-					name: 'Sun',
+				var planet = new Attractor({
+					name: 'Planet',
 					x: 0,
 					y: 0,
 					vx: 0,
 					vy: 0,
 
 					size: 15,
-					mass: 600,
-
-					r: 200, g: 200, b: 100
-				});
-
-				system = new StellarSystem(sun);
-
-				var planet = new Attractor({
-					name: 'Planet',
-					x: 200,
-					y: 0,
-
-					vx: 0,
-					vy: 60,
-
-					attractor: sun,
-
-					size: 5,
-					mass: 15,
+					mass: 60,
 
 					r: 100, g: 200, b: 100
 				});
 
-				system.addCelestialBody(planet);
+				system = new StellarSystem(planet);
 
-				var moon = new Attractor({
-					name: 'Moon',
-					x: 20,
+				var moon = new Orbiter({
+					name: 'Station',
+					x: -200,
 					y: 0,
 
 					vx: 0,
-					vy: -29.8,
+					vy: -17,
 
 					attractor: planet,
 
-					size: 2,
-					mass: 5,
+					size: 3,
+					mass: 1,
 
-					r: 100, g: 100, b: 100
+					r: 200, g: 200, b: 200
 				});
 
 				system.addCelestialBody(moon);
 
 				var spaceship = new Orbiter({
 					name: 'Spaceship',
-					x: 10,
+					x: 150,
 					y: 0,
 
 					vx: 0,
-					vy: 22.2,
+					vy: 15,
 
-					attractor: moon,
+					attractor: planet,
 
 					size: 2,
 					mass: 0.1,
 
-					r: 200, g: 200, b: 200
+					r: 200, g: 100, b: 100
 				});
 
 				system.addCelestialBody(spaceship);
 
-				followObject = sun;
+				followObject = planet;
 
-				document.getElementById('increase-speed').addEventListener('click', function () {
-					spaceship.v = spaceship.v.add(spaceship.v.normalise());
-					spaceship.recalculateOrbit();
+				document.getElementById('circularise').addEventListener('click', function () {
+					var v;
+
+					v = spaceship.orbit.attractor.getCircularOrbitVelocity(spaceship.coords, spaceship.orbit.anticlockwise);
+
+					console.log('Delta v:', v.subtract(spaceship.v));
+
+					spaceship.v = v;
+					spaceship.setNewOrbit(spaceship.orbit.attractor, system.t);
 				});
 
-				document.getElementById('decrease-speed').addEventListener('click', function () {
-					spaceship.v = spaceship.v.subtract(spaceship.v.normalise());
-					spaceship.recalculateOrbit();
+				document.getElementById('celestial-bodies').addEventListener('click', function (e) {
+					var x, y;
+
+					x = e.offsetX - document.getElementById('celestial-bodies').width / 2;
+					y = e.offsetY - document.getElementById('celestial-bodies').height / 2;
+
+					console.log(spaceship.orbit.pointInside(new Vector(x, y)));
 				});
 			},
 
