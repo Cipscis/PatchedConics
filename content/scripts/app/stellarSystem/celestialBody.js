@@ -339,6 +339,48 @@ define(
 			}
 		};
 
+		CelestialBody.prototype.createOrbitByApsis = function (dP, dA, angle, anticlockwise, tP) {
+			// Creates an orbit around this CelestialBody with the
+			// given periapsis distance (dP), apoapsis distance (dA),
+			// and argument of periapsis (angle)
+
+			// Time of periapsis is also set to tP, defaulting to 0
+
+			var a, e, b;
+
+			anticlockwise = anticlockwise || false;
+			tP = tP || 0;
+
+			if (dA < dP) {
+				// Apoapsis should always be larger than periapsis
+				// If not, swap them and rotate angle by pi
+
+				a = dA;
+				dA = dP;
+				dP = a;
+
+				angle = (angle + Math.PI) % (2 * Math.PI);
+			}
+
+			// Semimajor axis
+			a = (dP + dA) / 2;
+
+			// Eccentricity
+			e = 1 - (dP / a);
+
+			// Semiminor axis
+			b = a * Math.sqrt(1 - Math.pow(e, 2));
+
+			return new Orbit({
+				angle: angle,
+				a: a,
+				b: b,
+				t: tP,
+
+				attractor: this
+			});
+		};
+
 		//////////////////////////
 		// CIRCULARISING ORBITS //
 		//////////////////////////

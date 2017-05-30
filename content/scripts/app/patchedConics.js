@@ -24,6 +24,12 @@ define(
 
 		var benchmarking = 0.99;
 
+		// Debugging variables for drawing transfer orbit
+		var planet;
+		var moon;
+		var spaceship;
+		var testOrbit;
+
 		var Game = {
 			init: function () {
 				Game._initCtx();
@@ -55,7 +61,7 @@ define(
 			},
 
 			_initSystem: function () {
-				var planet = new Attractor({
+				planet = new Attractor({
 					name: 'Planet',
 					x: 0,
 					y: 0,
@@ -70,13 +76,13 @@ define(
 
 				system = new StellarSystem(planet);
 
-				var moon = new Orbiter({
+				moon = new Orbiter({
 					name: 'Station',
 					x: -200,
 					y: 0,
 
-					vx: 0,
-					vy: -17,
+					vx: 3,
+					vy: -14,
 
 					attractor: planet,
 
@@ -88,13 +94,13 @@ define(
 
 				system.addCelestialBody(moon);
 
-				var spaceship = new Orbiter({
+				spaceship = new Orbiter({
 					name: 'Spaceship',
 					x: 150,
 					y: 0,
 
-					vx: 0,
-					vy: 15,
+					vx: 5,
+					vy: 14,
 
 					attractor: planet,
 
@@ -147,6 +153,49 @@ define(
 				for (i = 0; i < numSteps; i++) {
 					system.update(dt*timeScale/numSteps);
 				}
+
+				// Debug: Calculate inefficient orbital transfer from
+				// spaceship's orbit to Moon's orbit
+
+				// Orbit is created by setting spaceship's current position to the
+				// orbit's periapsis, then ensuring the new orbit's apoapsis intersects
+				// with the moon's orbit
+
+				var initialBody,
+					finalBody,
+
+					fInitial,
+					fFinalOpp,
+					EFinalOpp,
+					pFinalOpp,
+
+					dP, dA;
+
+				initialBody = spaceship;
+				finalBody = moon;
+
+				// Angle of initialBody (global)
+				fInitial = initialBody.coords.getRotation();
+
+				// Opposite angle on finalBody's orbit (global)
+				fFinalOpp = fInitial + Math.PI;
+
+				// Opposite angle on finalBody's orbit (relative)
+				fFinalOpp = fFinalOpp - finalBody.orbit.angle;
+
+				// Eccentric anomaly of opposite point of finalBody's orbit
+				EFinalOpp = finalBody.orbit.eccentricAnomalyAtTrueAnomaly(fFinalOpp);
+
+				// Opposite point on finalBody's orbit
+				pFinalOpp = finalBody.orbit.getPointAtEccentricAnomaly(EFinalOpp);
+
+				// Periapsis distance
+				dP = initialBody.coords.mod();
+
+				// Apoapsis distance
+				dA = pFinalOpp.mod();
+
+				testOrbit = planet.createOrbitByApsis(dP, dA, fInitial, false, system.time);
 			},
 
 			_render: function () {
@@ -197,6 +246,8 @@ define(
 				}
 
 				system.draw(ctx.celestialBodies, ctx.orbits);
+
+				testOrbit.draw(ctx.orbits, '#ff0000');
 
 				ctx.celestialBodies.restore();
 				ctx.orbits.restore();
