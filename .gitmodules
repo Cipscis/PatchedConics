@@ -1,0 +1,3 @@
+[submodule "content/scripts/app/vector"]
+	path = content/scripts/app/vector
+	url = https://github.com/Cipscis/Vector2D.git
